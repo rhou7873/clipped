@@ -24,11 +24,11 @@ class GatewayCog(Cog, name="Command Gateway"):
         """
 
         # Try to join user's voice channel
-        self.join_vc(ctx)
+        if not await self.join_vc(ctx):
+            return
 
         # Begin voice capture
-        if not self.start_capturing_voice(ctx):
-            return
+        self.start_capturing_voice(ctx)
 
         # Display Clipped GUI
         self.display_gui(ctx)
@@ -47,22 +47,34 @@ class GatewayCog(Cog, name="Command Gateway"):
 
     ####### HELPER FUNCTIONS #######
 
-    def join_vc(ctx: discord.ApplicationContext) -> None:
+    async def join_vc(self, ctx: discord.ApplicationContext) -> discord.VoiceClient | None:
+        voice = ctx.author.voice
+
+        if voice is None:
+            await ctx.respond("You must be in a voice channel")
+            return None
+        
+        try:
+            voice_client: discord.VoiceClient = await voice.channel.connect()
+        except Exception as e:
+            print(e)
+            return None
+
+        return voice_client
+       
+    def start_capturing_voice(self, ctx: discord.ApplicationContext) -> None:
         pass
 
-    def start_capturing_voice(ctx: discord.ApplicationContext) -> bool:
+    def display_gui(self, ctx: discord.ApplicationContext) -> None:
         pass
 
-    def display_gui(ctx: discord.ApplicationContext) -> None:
+    def stop_capturing_voice(self):
         pass
 
-    def stop_capturing_voice():
+    def leave_vc(self):
         pass
 
-    def leave_vc():
-        pass
-
-    def fetch_clip():
+    def fetch_clip(self):
         """Invokes search handler to retrieve clip based on natural language prompt."""
         pass
 
