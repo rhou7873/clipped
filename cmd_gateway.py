@@ -1,0 +1,72 @@
+import os
+
+import discord
+from discord.ext.commands import Cog
+from discord.ext import commands
+
+
+class GatewayCog(Cog, name="Command Gateway"):
+    """Encapsulates all of Clipped's supported commands"""
+
+    def __init__(self, bot: discord.Bot):
+        self.bot = bot
+
+    ####### COMMAND REGISTRATIONS #######
+
+    @commands.slash_command(
+            name="joinvc",
+            description="Prompt Clipped bot to join your voice channel",
+            guild_ids=[os.getenv("DEV_GUILD_ID")])
+    async def cmd_join_vc(self, ctx: discord.ApplicationContext):
+        """ 
+        Prompts Clipped bot to join voice channel so it can start listening. This
+        command must be used before a clip can be requested.
+        """
+
+        # Try to join user's voice channel
+        self.join_vc(ctx)
+
+        # Begin voice capture
+        if not self.start_capturing_voice(ctx):
+            return
+
+        # Display Clipped GUI
+        self.display_gui(ctx)
+
+    @commands.slash_command(
+            name="leavevc",
+            description="Prompt Clipped bot to leave your voice channel",
+            guild_ids=[os.getenv("DEV_GUILD_ID")])
+    async def cmd_leave_vc(self, ctx: discord.ApplicationContext):
+        """ 
+        Prompts Clipped bot to leave voice channel. This will stop any clipping 
+        functionality until Clipped bot is prompted to join voice channel again.
+        """
+
+        await ctx.respond("leave_vc")
+
+    ####### HELPER FUNCTIONS #######
+
+    def join_vc(ctx: discord.ApplicationContext) -> None:
+        pass
+
+    def start_capturing_voice(ctx: discord.ApplicationContext) -> bool:
+        pass
+
+    def display_gui(ctx: discord.ApplicationContext) -> None:
+        pass
+
+    def stop_capturing_voice():
+        pass
+
+    def leave_vc():
+        pass
+
+    def fetch_clip():
+        """Invokes search handler to retrieve clip based on natural language prompt."""
+        pass
+
+
+def setup(bot):
+    """Function needed to support load_extension() call in main driver script"""
+    bot.add_cog(GatewayCog(bot))
