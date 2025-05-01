@@ -1,9 +1,7 @@
 import os
 import discord
 from discord.ext import commands
-from threading import Thread
-from cmd_gateway import GatewayCog
-
+import modules.database as db
 
 def run_bot(bot: commands.Bot):
     bot.run(os.getenv("BOT_TOKEN"))
@@ -17,7 +15,7 @@ def main():
     intents.voice_states = True
 
     bot: commands.Bot = commands.Bot(command_prefix="clip", intents=intents)
-    bot.load_extension("cmd_gateway")
+    bot.load_extension("modules.cmd_gateway")
 
     run_bot(bot)
 

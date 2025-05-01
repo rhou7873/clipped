@@ -22,15 +22,11 @@ class GatewayCog(Cog, name="Command Gateway"):
         Prompts Clipped bot to join voice channel so it can start listening. This
         command must be used before a clip can be requested.
         """
-
-        # Try to join user's voice channel
-        if not await self.join_vc(ctx):
+        voice = self.join_vc(ctx)
+        if voice is None:
             return
 
-        # Begin voice capture
-        self.start_capturing_voice(ctx)
-
-        # Display Clipped GUI
+        self.start_capturing_voice(voice)
         self.display_gui(ctx)
 
     @commands.slash_command(
@@ -42,8 +38,9 @@ class GatewayCog(Cog, name="Command Gateway"):
         Prompts Clipped bot to leave voice channel. This will stop any clipping 
         functionality until Clipped bot is prompted to join voice channel again.
         """
-
-        await ctx.respond("leave_vc")
+        self.remove_gui(ctx)
+        self.stop_capturing_voice(ctx)
+        self.leave_vc(ctx)
 
     ####### HELPER FUNCTIONS #######
 
@@ -62,16 +59,19 @@ class GatewayCog(Cog, name="Command Gateway"):
 
         return voice_client
        
-    def start_capturing_voice(self, ctx: discord.ApplicationContext) -> None:
+    def start_capturing_voice(self, voice: discord.VoiceClient) -> None:
         pass
 
     def display_gui(self, ctx: discord.ApplicationContext) -> None:
         pass
 
-    def stop_capturing_voice(self):
+    def remove_gui(self, ctx: discord.ApplicationContext) -> None:
         pass
 
-    def leave_vc(self):
+    def stop_capturing_voice(self, ctx: discord.ApplicationContext):
+        pass
+
+    def leave_vc(self, ctx: discord.ApplicationContext):
         pass
 
     def fetch_clip(self):
