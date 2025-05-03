@@ -1,7 +1,7 @@
 import os
 import modules.database as db
 import views
-from typing import Callable
+from typing import Callable 
 
 import discord
 from discord.ext.commands import Cog
@@ -21,6 +21,43 @@ class GatewayCog(Cog, name="Command Gateway"):
 
         self.bot = bot
         self.last_ui_message = None
+
+    ####### RESEND CONTROL BUTTONS #######
+
+    @commands.slash_command(
+        name="buttons",
+        description="Resend Clipped control buttons.",
+        guild_ids=[os.getenv("DEV_GUILD_ID")])
+    async def cmd_buttons(self, ctx: discord.ApplicationContext):
+        """Definition for `/buttons` slash command."""
+        params = {
+            "respond_func": ctx.respond,
+            "interaction": ctx.interaction
+        }
+        await self._buttons_handler(**params)
+
+    async def _buttons_handler(self,
+                               respond_func: Callable,
+                               interaction: discord.Interaction) -> None:
+        if self.last_ui_message is None:
+            await respond_func(":warning: Make sure you've started a Clipped "
+                               "session with `/joinvc`")
+
+        await self.last_ui_message.delete()  # delete the old control buttons
+        await self._display_gui(respond_func, interaction)
+
+    ####### VOICE CLIPPING #######
+
+    @commands.slash_command(
+        name="clipthat",
+        description="Clip the last 30 seconds of voice activity.",
+        guild_ids=[os.getenv("DEV_GUILD_ID")])
+    async def cmd_clip_that(self, ctx: discord.ApplicationContext):
+        """Definition for `/clipthat` slash command."""
+        pass
+
+    async def _clip_that_handler(self):
+        pass
 
     ####### JOINING VOICE #######
 
@@ -127,48 +164,23 @@ class GatewayCog(Cog, name="Command Gateway"):
         db.delete_document(collection_name=self.CLIPPED_SESSIONS_COLLECTION,
                            id=guild.id)
 
-    ####### RESEND CONTROL BUTTONS #######
-
-    @commands.slash_command(
-        name="buttons",
-        description="Resend Clipped control buttons.",
-        guild_ids=[os.getenv("DEV_GUILD_ID")])
-    async def cmd_buttons(self, ctx: discord.ApplicationContext):
-        """Definition for `/buttons` slash command."""
-        params = {
-            "respond_func": ctx.respond,
-            "interaction": ctx.interaction
-        }
-        await self._buttons_handler(**params)
-
-    async def _buttons_handler(self,
-                               respond_func: Callable,
-                               interaction: discord.Interaction) -> None:
-        if self.last_ui_message is None:
-            await respond_func(":warning: Make sure you've started a Clipped "
-                               "session with `/joinvc`")
-
-        await self.last_ui_message.delete()  # delete the old control buttons
-        await self._display_gui(respond_func, interaction)
-
-    ####### VOICE CLIPPING #######
-
-    @commands.slash_command(
-        name="clipthat",
-        description="Clip the last 30 seconds of voice activity.",
-        guild_ids=[os.getenv("DEV_GUILD_ID")])
-    async def cmd_clip_that(self, ctx: discord.ApplicationContext):
-        """Definition for `/clipthat` slash command."""
-        pass
-
-    async def _clip_that_handler(self):
-        pass
-
     ####### CLIP SEARCH #######
 
-    def fetch_clip(self):
-        """Invokes search handler to retrieve clip based on natural language prompt."""
-        pass
+    @commands.slash_command(
+        name="searchfor",
+        description="Search for a clip with a prompt.",
+        guild_ids=[os.getenv("DEV_GUILD_ID")])
+    async def cmd_search_for(self, ctx: discord.ApplicationContext, *args) -> None:
+        """Definition for `/searchfor` slash command."""
+        params = {
+            "respond_func": ctx.respond,
+            "prompt": args
+        }
+        await self._search_for_handler(**params)
+
+    async def _search_for_handler(self, respond_func: Callable, prompt: str):
+        """Handler for `/searchfor` slash command."""
+        await respond_func(":octagonal_sign: Command currently unsupported")
 
 
 def setup(bot):
