@@ -1,5 +1,7 @@
 import os
 import modules.database as db
+import views
+from typing import Callable
 
 import discord
 from discord.ext.commands import Cog
@@ -10,7 +12,6 @@ class GatewayCog(Cog, name="Command Gateway"):
     """Encapsulates all of Clipped's supported commands"""
 
     def __init__(self, bot: discord.Bot):
-        self.bot = bot
         self.CLIPPED_SESSIONS_COLLECTION = os.getenv(
             "CLIPPED_SESSIONS_COLLECTION")
 
@@ -18,87 +19,152 @@ class GatewayCog(Cog, name="Command Gateway"):
             raise Exception(
                 "Clipped sessions collection name is not in environment variables")
 
-    ####### COMMAND REGISTRATIONS #######
+        self.bot = bot
+        self.last_ui_message = None
+
+    ####### JOINING VOICE #######
 
     @commands.slash_command(
         name="joinvc",
-        description="Prompt Clipped bot to join your voice channel",
+        description="Prompt Clipped bot to join your voice channel.",
         guild_ids=[os.getenv("DEV_GUILD_ID")])
-    async def cmd_join_vc(self, ctx: discord.ApplicationContext):
-        """ 
-        Prompts Clipped bot to join voice channel so it can start listening. This
-        command must be used before a clip can be requested.
-        """
-        voice = await self.join_vc(ctx)
+    async def cmd_join_vc(self, ctx: discord.ApplicationContext) -> None:
+        """Definition for `/joinvc` slash command."""
+        params = {
+            "respond_func": ctx.respond,
+            "interaction": ctx.interaction,
+            "user_voice": ctx.author.voice,
+            "guild": ctx.guild,
+            "channel": ctx.channel
+        }
+        await self._join_vc_handler(**params)
+
+    async def _join_vc_handler(self,
+                               respond_func: Callable,
+                               interaction: discord.Interaction,
+                               user_voice: discord.VoiceState | None,
+                               guild: discord.Guild,
+                               channel: discord.VoiceChannel) -> None:
+        """Handler for `/joinvc` slash command"""
+        voice = await self._join_vc(respond_func, user_voice, guild, channel)
         if voice is None:
             return
 
-        self.start_capturing_voice(voice)
-        self.display_gui(ctx)
+        self._start_capturing_voice()
+        await self._display_gui(respond_func, interaction)
 
-    @commands.slash_command(
-        name="leavevc",
-        description="Prompt Clipped bot to leave your voice channel",
-        guild_ids=[os.getenv("DEV_GUILD_ID")])
-    async def cmd_leave_vc(self, ctx: discord.ApplicationContext):
-        """ 
-        Prompts Clipped bot to leave voice channel. This will stop any clipping 
-        functionality until Clipped bot is prompted to join voice channel again.
-        """
-        self.remove_gui(ctx)
-        self.stop_capturing_voice(ctx)
-        await self.leave_vc(ctx)
-
-    ####### HELPER FUNCTIONS #######
-
-    async def join_vc(self, ctx: discord.ApplicationContext) -> discord.VoiceClient | None:
-        voice = ctx.author.voice
-
-        if voice is None:
-            await ctx.respond(":warning: You must be in a voice channel")
+    async def _join_vc(self,
+                       respond_func: Callable,
+                       user_voice: discord.VoiceState | None,
+                       guild: discord.Guild,
+                       channel: discord.VoiceChannel) -> discord.VoiceClient | None:
+        if user_voice is None:
+            await respond_func(":warning: You must be in a voice channel")
             return None
 
         try:
-            voice_client: discord.VoiceClient = await voice.channel.connect()
+            voice_client: discord.VoiceClient = await user_voice.channel.connect()
+        except discord.ClientException as e:
+            await respond_func(":warning: I'm already connected to a voice channel")
+            return None
         except Exception as e:
             print(e)
             return None
 
         # Register voice session in DB
         db.create_document(collection_name=self.CLIPPED_SESSIONS_COLLECTION,
-                           obj={"_id": ctx.guild_id,
-                                "channel_id": ctx.channel_id})
+                           obj={"_id": guild.id,
+                                "channel_id": channel.id})
 
         return voice_client
 
-    def start_capturing_voice(self, voice: discord.VoiceClient) -> None:
+    def _start_capturing_voice(self) -> None:
         pass
 
-    def display_gui(self, ctx: discord.ApplicationContext) -> None:
+    async def _display_gui(self, respond_func: Callable, interaction: discord.Interaction) -> None:
+        clipped_buttons = views.ClipView(
+            clip_that_func=self._clip_that_handler,
+            leave_vc_func=self._leave_vc_handler)
+        await respond_func(view=clipped_buttons)
+        self.last_ui_message = await interaction.original_response()
+
+    ####### LEAVING VOICE #######
+
+    @commands.slash_command(
+        name="leavevc",
+        description="Prompt Clipped bot to leave your voice channel.",
+        guild_ids=[os.getenv("DEV_GUILD_ID")])
+    async def cmd_leave_vc(self, ctx: discord.ApplicationContext) -> None:
+        """Definition for `/leavevc` slash command."""
+        params = {
+            "respond_func": ctx.respond,
+            "guild": ctx.guild
+        }
+        await self._leave_vc_handler(**params)
+
+    async def _leave_vc_handler(self, respond_func: Callable, guild: discord.Guild) -> None:
+        """Handler for `/leavevc` slash command."""
+        self._remove_gui()
+        self._stop_capturing_voice()
+        await self._leave_vc(respond_func, guild)
+
+    def _remove_gui(self):
         pass
 
-    def remove_gui(self, ctx: discord.ApplicationContext) -> None:
+    def _stop_capturing_voice(self):
         pass
 
-    def stop_capturing_voice(self, ctx: discord.ApplicationContext):
-        pass
+    async def _leave_vc(self, respond_func: Callable, guild: discord.Guild) -> None:
+        bot_voice = guild.voice_client
 
-    async def leave_vc(self, ctx: discord.ApplicationContext):
-        user_voice = ctx.author.voice
-        bot_voice = ctx.guild.voice_client
-
-        if user_voice is None:
-            await ctx.respond(":warning: You must be in a voice channel")
-            return
         if bot_voice is None:
-            await ctx.respond(":warning: I'm not connected to a voice channel")
+            await respond_func(":warning: I'm not connected to a voice channel")
             return
 
         await bot_voice.disconnect()
 
         # Remove voice session from DB
         db.delete_document(collection_name=self.CLIPPED_SESSIONS_COLLECTION,
-                           id=ctx.guild_id)
+                           id=guild.id)
+
+    ####### RESEND CONTROL BUTTONS #######
+
+    @commands.slash_command(
+        name="buttons",
+        description="Resend Clipped control buttons.",
+        guild_ids=[os.getenv("DEV_GUILD_ID")])
+    async def cmd_buttons(self, ctx: discord.ApplicationContext):
+        """Definition for `/buttons` slash command."""
+        params = {
+            "respond_func": ctx.respond,
+            "interaction": ctx.interaction
+        }
+        await self._buttons_handler(**params)
+
+    async def _buttons_handler(self,
+                               respond_func: Callable,
+                               interaction: discord.Interaction) -> None:
+        if self.last_ui_message is None:
+            await respond_func(":warning: Make sure you've started a Clipped "
+                               "session with `/joinvc`")
+
+        await self.last_ui_message.delete()  # delete the old UI message
+        await self._display_gui(respond_func, interaction)
+
+    ####### VOICE CLIPPING #######
+
+    @commands.slash_command(
+        name="clipthat",
+        description="Clip the last 30 seconds of voice activity.",
+        guild_ids=[os.getenv("DEV_GUILD_ID")])
+    async def cmd_clip_that(self, ctx: discord.ApplicationContext):
+        """Definition for `/clipthat` slash command."""
+        pass
+
+    async def _clip_that_handler(self):
+        pass
+
+    ####### CLIP SEARCH #######
 
     def fetch_clip(self):
         """Invokes search handler to retrieve clip based on natural language prompt."""
