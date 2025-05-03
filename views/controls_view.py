@@ -2,7 +2,7 @@ import discord
 from typing import Callable
 
 
-class ClipView(discord.ui.View):
+class ControlsView(discord.ui.View):
     def __init__(self, clip_that_func: Callable, leave_vc_func: Callable):
         super().__init__()
         self.clip_that_func = clip_that_func
@@ -18,4 +18,3 @@ class ClipView(discord.ui.View):
     async def btn_leave_vc(self, button: discord.ui.Button, interaction: discord.Interaction):
         await self.leave_vc_func(respond_func=interaction.respond,
                                  guild=interaction.guild)
-        await interaction.message.delete()  # remove button UI

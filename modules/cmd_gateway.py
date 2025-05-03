@@ -82,7 +82,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         pass
 
     async def _display_gui(self, respond_func: Callable, interaction: discord.Interaction) -> None:
-        clipped_buttons = views.ClipView(
+        clipped_buttons = views.ControlsView(
             clip_that_func=self._clip_that_handler,
             leave_vc_func=self._leave_vc_handler)
         await respond_func(view=clipped_buttons)
@@ -104,12 +104,12 @@ class GatewayCog(Cog, name="Command Gateway"):
 
     async def _leave_vc_handler(self, respond_func: Callable, guild: discord.Guild) -> None:
         """Handler for `/leavevc` slash command."""
-        self._remove_gui()
+        await self._remove_gui()
         self._stop_capturing_voice()
         await self._leave_vc(respond_func, guild)
 
-    def _remove_gui(self):
-        pass
+    async def _remove_gui(self):
+        await self.last_ui_message.delete()
 
     def _stop_capturing_voice(self):
         pass
@@ -148,7 +148,7 @@ class GatewayCog(Cog, name="Command Gateway"):
             await respond_func(":warning: Make sure you've started a Clipped "
                                "session with `/joinvc`")
 
-        await self.last_ui_message.delete()  # delete the old UI message
+        await self.last_ui_message.delete()  # delete the old control buttons
         await self._display_gui(respond_func, interaction)
 
     ####### VOICE CLIPPING #######

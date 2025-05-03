@@ -1,1 +1,1 @@
-from .clip_view import ClipView
+from .controls_view import ControlsView
