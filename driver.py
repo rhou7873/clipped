@@ -1,10 +1,14 @@
 import os
 import discord
 from discord.ext import commands
-import modules.database as db
 
 def run_bot(bot: commands.Bot):
-    bot.run(os.getenv("BOT_TOKEN"))
+    BOT_TOKEN = os.getenv("BOT_TOKEN")
+    
+    if BOT_TOKEN is None:
+        raise Exception("Bot token not set in environment variables")
+
+    bot.run(BOT_TOKEN)
 
 
 def main():

@@ -1,7 +1,7 @@
 import os
 import modules.database as db
 import views
-from typing import Callable 
+from typing import Callable
 
 import discord
 from discord.ext.commands import Cog
@@ -14,10 +14,16 @@ class GatewayCog(Cog, name="Command Gateway"):
     def __init__(self, bot: discord.Bot):
         self.CLIPPED_SESSIONS_COLLECTION = os.getenv(
             "CLIPPED_SESSIONS_COLLECTION")
+        self.DISCORD_API_URL = os.getenv("DISCORD_API_URL")
+        self.BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-        if self.CLIPPED_SESSIONS_COLLECTION is None:
-            raise Exception(
-                "Clipped sessions collection name is not in environment variables")
+        if (self.CLIPPED_SESSIONS_COLLECTION is None or
+            self.DISCORD_API_URL is None or
+            self.BOT_TOKEN):
+            raise Exception("Environment variable(s) not set: "
+                            f"CLIPPED_SESSIONS_COLLECTION={self.CLIPPED_SESSIONS_COLLECTION}, "
+                            f"DISCORD_API_URL={self.DISCORD_API_URL}, "
+                            f"BOT_TOKEN={self.BOT_TOKEN}")
 
         self.bot = bot
         self.last_ui_message = None
