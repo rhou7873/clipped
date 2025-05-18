@@ -1,15 +1,7 @@
-import os
 import discord
 from discord.ext import commands
 
-def run_bot(bot: commands.Bot):
-    BOT_TOKEN = os.getenv("BOT_TOKEN")
-    
-    if BOT_TOKEN is None:
-        raise Exception("Bot token not set in environment variables")
-
-    bot.run(BOT_TOKEN)
-
+from bw_secrets import BOT_TOKEN
 
 def main():
     """ Setup bot intents and cogs and bring General Walarus to life """
@@ -21,7 +13,7 @@ def main():
     bot: commands.Bot = commands.Bot(command_prefix="clip", intents=intents)
     bot.load_extension("modules.cmd_gateway")
 
-    run_bot(bot)
+    bot.run(BOT_TOKEN)
 
 
 if __name__ == "__main__":

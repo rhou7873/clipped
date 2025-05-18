@@ -1,17 +1,13 @@
 import pymongo as mg
 import os
 from typing import List
+from bw_secrets import MONGO_CONN_STRING, MONGO_DB_NAME
 
-CONN_STRING = os.getenv("MONGO_CONN_STRING")
-DB_NAME = os.getenv("MONGO_DB_NAME")
 
-if CONN_STRING is None or DB_NAME is None:
-    raise Exception("Invalid DB environment variables "
-                    f"(CONN_STRING={CONN_STRING}, DB_NAME={DB_NAME})")
-
-db = mg.MongoClient(CONN_STRING)[DB_NAME]
+db = mg.MongoClient(MONGO_CONN_STRING)[MONGO_DB_NAME]
 
 ####### LOW-LEVEL CRUD OPERATIONS #######
+
 
 def create_document(collection_name: str, obj) -> str:
     if collection_name not in db.list_collection_names():
@@ -22,7 +18,8 @@ def create_document(collection_name: str, obj) -> str:
 
     return inserted_id
 
-def read_document(collection_name: str, filter, projection = None) -> List:
+
+def read_document(collection_name: str, filter, projection=None) -> List:
     if collection_name not in db.list_collection_names():
         raise Exception(f"Collection name '{collection_name}' doesn't exist")
 
@@ -31,15 +28,18 @@ def read_document(collection_name: str, filter, projection = None) -> List:
 
     return results
 
+
 def update_document():
     pass
+
 
 def delete_document(collection_name: str, id: str) -> None:
     if collection_name not in db.list_collection_names():
         raise Exception(f"Collection name '{collection_name}' doesn't exist")
-    
+
     collection = db[collection_name]
     delete_count = collection.delete_one({"_id": id}).deleted_count
 
     if delete_count < 1:
-        raise Exception(f"No documents deleted (collection={collection_name}, id={id})")
+        raise Exception(
+            f"No documents deleted (collection={collection_name}, id={id})")

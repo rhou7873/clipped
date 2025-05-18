@@ -2,6 +2,7 @@ import os
 import modules.database as db
 import views
 from typing import Callable
+from bw_secrets import CLIPPED_SESSIONS_COLLECTION, DEV_GUILD_ID
 
 import discord
 from discord.ext.commands import Cog
@@ -12,19 +13,6 @@ class GatewayCog(Cog, name="Command Gateway"):
     """Encapsulates all of Clipped's supported commands"""
 
     def __init__(self, bot: discord.Bot):
-        self.CLIPPED_SESSIONS_COLLECTION = os.getenv(
-            "CLIPPED_SESSIONS_COLLECTION")
-        self.DISCORD_API_URL = os.getenv("DISCORD_API_URL")
-        self.BOT_TOKEN = os.getenv("BOT_TOKEN")
-
-        if (self.CLIPPED_SESSIONS_COLLECTION is None or
-            self.DISCORD_API_URL is None or
-            self.BOT_TOKEN):
-            raise Exception("Environment variable(s) not set: "
-                            f"CLIPPED_SESSIONS_COLLECTION={self.CLIPPED_SESSIONS_COLLECTION}, "
-                            f"DISCORD_API_URL={self.DISCORD_API_URL}, "
-                            f"BOT_TOKEN={self.BOT_TOKEN}")
-
         self.bot = bot
         self.last_ui_message = None
 
@@ -33,7 +21,7 @@ class GatewayCog(Cog, name="Command Gateway"):
     @commands.slash_command(
         name="buttons",
         description="Resend Clipped control buttons.",
-        guild_ids=[os.getenv("DEV_GUILD_ID")])
+        guild_ids=[DEV_GUILD_ID])
     async def cmd_buttons(self, ctx: discord.ApplicationContext):
         """Definition for `/buttons` slash command."""
         params = {
@@ -48,6 +36,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         if self.last_ui_message is None:
             await respond_func(":warning: Make sure you've started a Clipped "
                                "session with `/joinvc`")
+            return
 
         await self.last_ui_message.delete()  # delete the old control buttons
         await self._display_gui(respond_func, interaction)
@@ -57,7 +46,7 @@ class GatewayCog(Cog, name="Command Gateway"):
     @commands.slash_command(
         name="clipthat",
         description="Clip the last 30 seconds of voice activity.",
-        guild_ids=[os.getenv("DEV_GUILD_ID")])
+        guild_ids=[DEV_GUILD_ID])
     async def cmd_clip_that(self, ctx: discord.ApplicationContext):
         """Definition for `/clipthat` slash command."""
         pass
@@ -70,7 +59,7 @@ class GatewayCog(Cog, name="Command Gateway"):
     @commands.slash_command(
         name="joinvc",
         description="Prompt Clipped bot to join your voice channel.",
-        guild_ids=[os.getenv("DEV_GUILD_ID")])
+        guild_ids=[DEV_GUILD_ID])
     async def cmd_join_vc(self, ctx: discord.ApplicationContext) -> None:
         """Definition for `/joinvc` slash command."""
         params = {
@@ -115,7 +104,7 @@ class GatewayCog(Cog, name="Command Gateway"):
             return None
 
         # Register voice session in DB
-        db.create_document(collection_name=self.CLIPPED_SESSIONS_COLLECTION,
+        db.create_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
                            obj={"_id": guild.id,
                                 "channel_id": channel.id})
 
@@ -136,7 +125,7 @@ class GatewayCog(Cog, name="Command Gateway"):
     @commands.slash_command(
         name="leavevc",
         description="Prompt Clipped bot to leave your voice channel.",
-        guild_ids=[os.getenv("DEV_GUILD_ID")])
+        guild_ids=[DEV_GUILD_ID])
     async def cmd_leave_vc(self, ctx: discord.ApplicationContext) -> None:
         """Definition for `/leavevc` slash command."""
         params = {
@@ -167,7 +156,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         await bot_voice.disconnect()
 
         # Remove voice session from DB
-        db.delete_document(collection_name=self.CLIPPED_SESSIONS_COLLECTION,
+        db.delete_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
                            id=guild.id)
 
     ####### CLIP SEARCH #######
@@ -175,7 +164,7 @@ class GatewayCog(Cog, name="Command Gateway"):
     @commands.slash_command(
         name="searchfor",
         description="Search for a clip with a prompt.",
-        guild_ids=[os.getenv("DEV_GUILD_ID")])
+        guild_ids=[DEV_GUILD_ID])
     async def cmd_search_for(self, ctx: discord.ApplicationContext, *args) -> None:
         """Definition for `/searchfor` slash command."""
         params = {
