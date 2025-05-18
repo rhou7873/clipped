@@ -26,10 +26,7 @@ client = BitwardenClient(
     )
 )
 
-auth_response = client.auth().login_access_token(ACCESS_TOKEN)
-
-if not auth_response.success:
-    raise Exception("Couldn't authenticate for Bitwarden SDK")
+client.access_token_login(ACCESS_TOKEN)
 
 ################# ENVIRONMENT VARIABLES #################
 
