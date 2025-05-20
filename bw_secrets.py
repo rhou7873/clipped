@@ -43,6 +43,8 @@ CLIPPED_SESSIONS_COLLECTION = client.secrets().get(
     "8940a032-0ed4-41d3-ac61-b2dd0000ba15").data.value
 CLIPS_METADATA_COLLECTION = client.secrets().get(
     "5762957e-3ba1-41a0-b2e0-b2dd0000c2a5").data.value
+USERS_COLLECTION = client.secrets().get(
+    "c1b1b865-88c5-4da9-b7b8-b2e301661387").data.value
 MONGO_CONN_STRING = client.secrets().get(
     "8fc71769-0255-4491-a3f7-b2dd0000dabf").data.value
 MONGO_DB_NAME = client.secrets().get(

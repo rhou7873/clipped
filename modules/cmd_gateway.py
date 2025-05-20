@@ -1,8 +1,7 @@
-import os
 import modules.database as db
 import views
-from typing import Callable
-from bw_secrets import CLIPPED_SESSIONS_COLLECTION, DEV_GUILD_ID
+from typing import Callable, Dict, List, Tuple
+from bw_secrets import CLIPPED_SESSIONS_COLLECTION, USERS_COLLECTION, DEV_GUILD_ID
 
 import discord
 from discord.ext.commands import Cog
@@ -16,7 +15,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         self.bot = bot
         self.last_ui_message = None
 
-    ####### RESEND CONTROL BUTTONS #######
+    #################### RESEND CONTROL BUTTONS ####################
 
     @commands.slash_command(
         name="buttons",
@@ -41,7 +40,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         await self.last_ui_message.delete()  # delete the old control buttons
         await self._display_gui(respond_func, interaction)
 
-    ####### VOICE CLIPPING #######
+    #################### VOICE CLIPPING ####################
 
     @commands.slash_command(
         name="clipthat",
@@ -54,7 +53,7 @@ class GatewayCog(Cog, name="Command Gateway"):
     async def _clip_that_handler(self):
         pass
 
-    ####### JOINING VOICE #######
+    #################### JOINING VOICE ####################
 
     @commands.slash_command(
         name="joinvc",
@@ -65,7 +64,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         params = {
             "respond_func": ctx.respond,
             "interaction": ctx.interaction,
-            "user_voice": ctx.author.voice,
+            "user": ctx.author,
             "guild": ctx.guild,
             "channel": ctx.channel
         }
@@ -74,43 +73,77 @@ class GatewayCog(Cog, name="Command Gateway"):
     async def _join_vc_handler(self,
                                respond_func: Callable,
                                interaction: discord.Interaction,
-                               user_voice: discord.VoiceState | None,
+                               user: discord.Member | discord.User,
                                guild: discord.Guild,
                                channel: discord.VoiceChannel) -> None:
         """Handler for `/joinvc` slash command"""
-        voice = await self._join_vc(respond_func, user_voice, guild, channel)
+        voice, statuses = await self._join_vc(respond_func, user, guild, channel)
         if voice is None:
             return
 
-        self._start_capturing_voice()
+        self._start_capturing_voice(voice, statuses)
         await self._display_gui(respond_func, interaction)
 
     async def _join_vc(self,
                        respond_func: Callable,
-                       user_voice: discord.VoiceState | None,
+                       user: discord.Member | discord.User,
                        guild: discord.Guild,
-                       channel: discord.VoiceChannel) -> discord.VoiceClient | None:
-        if user_voice is None:
+                       channel: discord.VoiceChannel) -> Tuple[discord.VoiceClient | None, Dict[discord.Member, bool]]:
+        if user.voice is None:
             await respond_func(":warning: You must be in a voice channel")
-            return None
+            return (None, dict())
 
         try:
-            voice_client: discord.VoiceClient = await user_voice.channel.connect()
+            voice_client: discord.VoiceClient = await user.voice.channel.connect()
         except discord.ClientException as e:
             await respond_func(":warning: I'm already connected to a voice channel")
-            return None
+            return (None, dict())
         except Exception as e:
             print(e)
-            return None
+            return (None, dict())
 
         # Register voice session in DB
         db.create_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
                            obj={"_id": guild.id,
                                 "channel_id": channel.id})
 
-        return voice_client
+        # Fetch opted-in statuses of users in the voice channel
+        opted_in_statuses: Dict[discord.Member, bool] = self._get_opted_in_statuses(
+            users=voice_client.channel.members)
 
-    def _start_capturing_voice(self) -> None:
+        return (voice_client, opted_in_statuses)
+
+    def _get_opted_in_statuses(self, users: List[discord.Member]) -> Dict[discord.Member, bool]:
+        statuses = {}
+
+        for user in users:
+            if user.id == self.bot.user.id:  # skip the Clipped bot
+                continue
+
+            # Fetch users' `opt_in` status from DB
+            query_results = db.read_document(collection_name=USERS_COLLECTION,
+                                             filter={"_id": user.id},
+                                             projection={"_id": 0, "opted_in": 1})
+
+            # If user doesn't exist in DB, create new user document
+            opted_in = False  # default to opt-out status
+            if len(query_results) == 0:
+                db.create_document(collection_name=USERS_COLLECTION,
+                                   obj={
+                                       "_id": user.id,
+                                       "opted_in": opted_in
+                                   })
+            else:
+                opted_in = query_results[0]["opted_in"]
+                print(f"opted_in: {opted_in}")
+
+            statuses[user] = opted_in
+
+        return statuses
+
+    def _start_capturing_voice(self,
+                               voice_client: discord.VoiceClient,
+                               opted_in_statuses: Dict[discord.Member, bool]) -> None:
         pass
 
     async def _display_gui(self, respond_func: Callable, interaction: discord.Interaction) -> None:
@@ -120,7 +153,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         await respond_func(view=clipped_buttons)
         self.last_ui_message = await interaction.original_response()
 
-    ####### LEAVING VOICE #######
+    #################### LEAVING VOICE ####################
 
     @commands.slash_command(
         name="leavevc",
@@ -159,7 +192,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         db.delete_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
                            id=guild.id)
 
-    ####### CLIP SEARCH #######
+    #################### CLIP SEARCH ####################
 
     @commands.slash_command(
         name="searchfor",
