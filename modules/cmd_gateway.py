@@ -108,16 +108,17 @@ class GatewayCog(Cog, name="Command Gateway"):
                                 "channel_id": channel.id})
 
         # Fetch opted-in statuses of users in the voice channel
-        opted_in_statuses: Dict[discord.Member, bool] = self._get_opted_in_statuses(
-            users=voice_client.channel.members)
+        opted_in_statuses = GatewayCog.get_opted_in_statuses(bot=self.bot,
+                                                             users=voice_client.channel.members)
 
         return (voice_client, opted_in_statuses)
 
-    def _get_opted_in_statuses(self, users: List[discord.Member]) -> Dict[discord.Member, bool]:
+    @staticmethod
+    def get_opted_in_statuses(bot: discord.Bot, users: List[discord.Member]) -> Dict[discord.Member, bool]:
         statuses = {}
 
         for user in users:
-            if user.id == self.bot.user.id:  # skip the Clipped bot
+            if user.id == bot.user.id:  # skip the Clipped bot
                 continue
 
             # Fetch users' `opt_in` status from DB
@@ -135,7 +136,6 @@ class GatewayCog(Cog, name="Command Gateway"):
                                    })
             else:
                 opted_in = query_results[0]["opted_in"]
-                print(f"opted_in: {opted_in}")
 
             statuses[user] = opted_in
 
