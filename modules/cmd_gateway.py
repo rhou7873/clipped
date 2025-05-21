@@ -208,7 +208,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         name="optin",
         description="Allow clips to capture your voice.",
         guild_ids=[DEV_GUILD_ID])
-    async def cmd_opt_out(self, ctx: discord.ApplicationContext) -> None:
+    async def cmd_opt_in(self, ctx: discord.ApplicationContext) -> None:
         """Definition for `/optin` slash command."""
         params = {
             "respond_func": ctx.respond,
