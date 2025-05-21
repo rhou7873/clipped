@@ -201,6 +201,44 @@ class GatewayCog(Cog, name="Command Gateway"):
                            id=guild.id)
 
     ################################################################
+    ########################## OPT-IN ##############################
+    ################################################################
+
+    @commands.slash_command(
+        name="optin",
+        description="Allow clips to capture your voice.",
+        guild_ids=[DEV_GUILD_ID])
+    async def cmd_opt_out(self, ctx: discord.ApplicationContext) -> None:
+        """Definition for `/optin` slash command."""
+        params = {
+            "respond_func": ctx.respond,
+        }
+        await self._opt_in_handler(**params)
+
+    async def _opt_in_handler(self, respond_func: Callable):
+        """Handler for `/optout` slash command."""
+        await respond_func(":octagonal_sign: Command currently unsupported")
+
+    ################################################################
+    ########################## OPT-OUT #############################
+    ################################################################
+
+    @commands.slash_command(
+        name="optout",
+        description="Don't allow clips to capture your voice.",
+        guild_ids=[DEV_GUILD_ID])
+    async def cmd_opt_out(self, ctx: discord.ApplicationContext) -> None:
+        """Definition for `/optout` slash command."""
+        params = {
+            "respond_func": ctx.respond,
+        }
+        await self._opt_out_handler(**params)
+
+    async def _opt_out_handler(self, respond_func: Callable):
+        """Handler for `/optout` slash command."""
+        await respond_func(":octagonal_sign: Command currently unsupported")
+
+    ################################################################
     ########################## CLIP SEARCH #########################
     ################################################################
 
