@@ -15,7 +15,9 @@ class GatewayCog(Cog, name="Command Gateway"):
         self.bot = bot
         self.last_ui_message = None
 
+    ################################################################
     #################### RESEND CONTROL BUTTONS ####################
+    ################################################################
 
     @commands.slash_command(
         name="buttons",
@@ -40,7 +42,9 @@ class GatewayCog(Cog, name="Command Gateway"):
         await self.last_ui_message.delete()  # delete the old control buttons
         await self._display_gui(respond_func, interaction)
 
-    #################### VOICE CLIPPING ####################
+    ################################################################
+    ######################## VOICE CLIPPING ########################
+    ################################################################
 
     @commands.slash_command(
         name="clipthat",
@@ -53,7 +57,9 @@ class GatewayCog(Cog, name="Command Gateway"):
     async def _clip_that_handler(self):
         pass
 
-    #################### JOINING VOICE ####################
+    ################################################################
+    ######################### JOINING VOICE ########################
+    ################################################################
 
     @commands.slash_command(
         name="joinvc",
@@ -153,7 +159,9 @@ class GatewayCog(Cog, name="Command Gateway"):
         await respond_func(view=clipped_buttons)
         self.last_ui_message = await interaction.original_response()
 
-    #################### LEAVING VOICE ####################
+    ################################################################
+    ######################### LEAVING VOICE ########################
+    ################################################################
 
     @commands.slash_command(
         name="leavevc",
@@ -192,7 +200,9 @@ class GatewayCog(Cog, name="Command Gateway"):
         db.delete_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
                            id=guild.id)
 
-    #################### CLIP SEARCH ####################
+    ################################################################
+    ########################## CLIP SEARCH #########################
+    ################################################################
 
     @commands.slash_command(
         name="searchfor",

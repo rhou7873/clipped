@@ -6,8 +6,9 @@ from bw_secrets import MONGO_CONN_STRING, MONGO_DB_NAME
 
 db = mg.MongoClient(MONGO_CONN_STRING)[MONGO_DB_NAME]
 
-
-#################### LOW-LEVEL CRUD OPERATIONS ####################
+#########################################################################
+####################### LOW-LEVEL CRUD OPERATIONS #######################
+#########################################################################
 
 def create_document(collection_name: str, obj) -> str:
     if collection_name not in db.list_collection_names():
