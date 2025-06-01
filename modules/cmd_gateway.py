@@ -1,7 +1,7 @@
 import views
 from typing import Callable
 from bw_secrets import DEV_GUILD_ID
-from .events_handler import EventsCog
+import modules.database as db
 
 import discord
 from discord.ext.commands import Cog
@@ -167,12 +167,26 @@ class GatewayCog(Cog, name="Command Gateway"):
         """Definition for `/optin` slash command."""
         params = {
             "respond_func": ctx.respond,
+            "create_dm_func": ctx.author.create_dm,
+            "guild": ctx.guild,
+            "member": ctx.author
         }
         await self._opt_in_handler(**params)
 
-    async def _opt_in_handler(self, respond_func: Callable):
+    async def _opt_in_handler(self,
+                              respond_func: Callable,
+                              create_dm_func: Callable,
+                              guild: discord.Guild,
+                              member: discord.Member):
         """Handler for `/optin` slash command."""
-        await respond_func(":octagonal_sign: Command currently unsupported")
+        db.set_opted_in_status(member, opted_in=True)
+
+        dm = await create_dm_func()
+        await dm.send("**OPT-IN CONFIRMATION**: You have ***opted in*** to audio "
+                      f"capture in '{guild.name}', meaning your voice ***will*** "
+                      "be heard in clips generated from that server.")
+
+        await respond_func("Your opt-in preference has been updated")
 
     ################################################################
     ########################## OPT-OUT #############################
@@ -198,7 +212,7 @@ class GatewayCog(Cog, name="Command Gateway"):
                                guild: discord.Guild,
                                member: discord.Member) -> None:
         """Handler for `/optout` slash command."""
-        EventsCog.set_opted_in_status(member, opted_in=False)
+        db.set_opted_in_status(member, opted_in=False)
 
         dm = await create_dm_func()
         await dm.send("**OPT-OUT CONFIRMATION**: You have ***opted out*** of audio "
