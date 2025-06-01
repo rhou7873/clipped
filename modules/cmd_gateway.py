@@ -1,6 +1,7 @@
 import views
 from typing import Callable
 from bw_secrets import DEV_GUILD_ID
+from .events_handler import EventsCog
 
 import discord
 from discord.ext.commands import Cog
@@ -137,6 +138,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         await self._remove_gui()
         self._stop_capturing_voice()
         await self._leave_vc(respond_func, guild)
+        await respond_func("No longer capturing audio for clips")
 
     async def _remove_gui(self):
         await self.last_ui_message.delete()
@@ -169,7 +171,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         await self._opt_in_handler(**params)
 
     async def _opt_in_handler(self, respond_func: Callable):
-        """Handler for `/optout` slash command."""
+        """Handler for `/optin` slash command."""
         await respond_func(":octagonal_sign: Command currently unsupported")
 
     ################################################################
@@ -184,12 +186,26 @@ class GatewayCog(Cog, name="Command Gateway"):
         """Definition for `/optout` slash command."""
         params = {
             "respond_func": ctx.respond,
+            "create_dm_func": ctx.author.create_dm,
+            "guild": ctx.guild,
+            "member": ctx.author
         }
         await self._opt_out_handler(**params)
 
-    async def _opt_out_handler(self, respond_func: Callable):
+    async def _opt_out_handler(self,
+                               respond_func: Callable,
+                               create_dm_func: Callable,
+                               guild: discord.Guild,
+                               member: discord.Member) -> None:
         """Handler for `/optout` slash command."""
-        await respond_func(":octagonal_sign: Command currently unsupported")
+        EventsCog.set_opted_in_status(member, opted_in=False)
+
+        dm = await create_dm_func()
+        await dm.send("**OPT-OUT CONFIRMATION**: You have ***opted out*** of audio "
+                      f"capture in '{guild.name}', meaning your voice ***will not*** "
+                      "be heard in clips generated from that server.")
+
+        await respond_func("Your opt-in preference has been updated")
 
     ################################################################
     ########################## CLIP SEARCH #########################
