@@ -32,12 +32,12 @@ class EventsCog(Cog, name="Event Handler"):
         await self._on_voice_state_update_handler(**params)
 
     async def _on_voice_state_update_handler(self,
-                                             member: discord.Member,
+                                             member_updated: discord.Member,
                                              before: discord.VoiceState,
                                              after: discord.VoiceState) -> None:
         # Check DB to see if bot is in voice channel for this server,
         # and if so, retrieve the voice channel ID
-        guild_id = member.guild.id
+        guild_id = member_updated.guild.id
         query_result = db.read_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
                                         filter={"_id": guild_id},
                                         projection={"_id": 0, "channel_id": 1})
@@ -49,20 +49,22 @@ class EventsCog(Cog, name="Event Handler"):
         # Two scenarios (we care about) that may trigger this event:
         # - bot joins a VC with users in it (bot_joined_vc)
         # - user joins VC with the bot in it (user_joined_bot_vc)
-        bot_joined_vc = member.id == self.bot.user.id and after.channel is not None
+        bot_joined_vc = member_updated.id == self.bot.user.id and after.channel is not None
         user_joined_bot_vc = after.channel is not None and after.channel.id == bot_channel_id
 
         # Both of these scenarios is when we want to fetch opt-in statuses
         # before we start capturing voice data
-        opted_in_statuses = {}
+        new_opted_in_statuses = {}
         if bot_joined_vc:
-            opted_in_statuses = self._get_opted_in_statuses(members=after.channel.members)
+            new_opted_in_statuses = self._get_opted_in_statuses(members=after.channel.members)
         elif user_joined_bot_vc:
-            opted_in_statuses = self._get_opted_in_statuses(members=[member])
+            new_opted_in_statuses = self._get_opted_in_statuses(members=[member_updated])
 
         # TODO: now that we have opted-in statuses (of all users in VC that bot joined,
         # or of the single member that just joined the VC), we want to use this information
         # to manage whose voice data we're capturing
+        for member, opted_in in new_opted_in_statuses:
+            pass
 
     def _get_opted_in_statuses(self, members: List[discord.Member]) -> Dict[discord.Member, bool]:
         statuses = {}
@@ -77,7 +79,7 @@ class EventsCog(Cog, name="Event Handler"):
                                              projection={"_id": 0, "opted_in": 1})
 
             # If user doesn't exist in DB, create new user document
-            opted_in = False  # default to opt-out status
+            opted_in = True  # default to opt-in status
             if len(query_results) == 0:
                 db.create_document(collection_name=USERS_COLLECTION,
                                    obj={
