@@ -12,9 +12,14 @@ db = mg.MongoClient(MONGO_CONN_STRING)[MONGO_DB_NAME]
 #########################################################################
 
 
+def clear_all_clipped_sessions() -> None:
+    _delete_all_documents(collection_name=CLIPPED_SESSIONS_COLLECTION)
+
+
 def member_exists(guild_id: int, user_id: int) -> bool:
     results = _read_document(collection_name=USERS_COLLECTION,
-                             filter={"_id": {"user_id": user_id, "guild_id": guild_id}},
+                             filter={
+                                 "_id": {"user_id": user_id, "guild_id": guild_id}},
                              projection={"_id": 1})
     return len(results) >= 1
 
@@ -30,7 +35,8 @@ def get_opted_in_statuses(bot: discord.Bot,
         # Fetch users' `opt_in` status from DB
         guild = member.guild
         query_results = _read_document(collection_name=USERS_COLLECTION,
-                                       filter={"_id": {"user_id": member.id, "guild_id": guild.id}},
+                                       filter={
+                                           "_id": {"user_id": member.id, "guild_id": guild.id}},
                                        projection={"_id": 0, "opted_in": 1})
 
         # If user doesn't exist in DB, create new user document
@@ -138,3 +144,15 @@ def _delete_document(collection_name: str, id: str) -> None:
     if delete_count < 1:
         raise Exception(
             f"No documents deleted (collection={collection_name}, id={id})")
+
+
+def _delete_all_documents(collection_name: str) -> None:
+    if collection_name not in db.list_collection_names():
+        raise Exception(f"Collection name '{collection_name}' doesn't exist")
+
+    collection = db[collection_name]
+    result = collection.delete_many({})
+
+    if not result.acknowledged:
+        raise Exception(
+            f"There was a problem deleting all documents (collection={collection_name})")
