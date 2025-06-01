@@ -12,4 +12,5 @@ class OptInButton(discord.ui.Button):
         db.set_opted_in_status(guild=self.guild,
                                user=interaction.user,
                                opted_in=True)
-        await interaction.respond("You are now opted in to voice capture")
+        await interaction.respond(
+            f"You are now opted in to voice capture in the '{self.guild.name}' server")

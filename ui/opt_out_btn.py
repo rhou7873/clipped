@@ -12,4 +12,5 @@ class OptOutButton(discord.ui.Button):
         db.set_opted_in_status(guild=self.guild,
                                user=interaction.user,
                                opted_in=False)
-        await interaction.respond("You are now opted out of voice capture")
+        await interaction.respond(
+            f"You are now opted out of voice capture in the '{self.guild.name}' server")
