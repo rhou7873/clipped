@@ -105,11 +105,6 @@ class GatewayCog(Cog, name="Command Gateway"):
             print(e)
             return (None, dict())
 
-        # Register voice session in DB
-        db.create_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
-                           obj={"_id": guild.id,
-                                "channel_id": voice_client.channel.id})
-
         return voice_client
 
     def _start_capturing_voice(self, voice_client: discord.VoiceClient) -> None:
@@ -158,10 +153,6 @@ class GatewayCog(Cog, name="Command Gateway"):
             return
 
         await bot_voice.disconnect()
-
-        # Remove voice session from DB
-        db.delete_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
-                           id=guild.id)
 
     ################################################################
     ########################## OPT-IN ##############################
