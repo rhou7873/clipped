@@ -72,23 +72,25 @@ class EventsCog(Cog, name="Event Handler"):
                 raise Exception(
                     "Voice state channel shouldn't be None if bot joined VC")
 
-            guild_id = new_state.channel.guild.id
-            channel_id = new_state.channel.id
+            guild = new_state.channel.guild
+            channel = new_state.channel
 
             # Register voice session in DB
             db.create_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
-                               obj={"_id": guild_id,
-                                    "channel_id": channel_id})
+                               obj={"_id": guild.id,
+                                    "guild_name": guild.name,
+                                    "channel_id": channel.id,
+                                    "channel_name": channel.name})
         elif bot_left_vc:
             if new_state.channel is not None:
                 raise Exception(
                     "Voice state channel should be None if bot left VC")
 
-            guild_id = old_state.channel.guild.id
+            guild = old_state.channel.guild
 
             # Remove voice session from DB
             db.delete_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
-                               id=guild_id)
+                               id=guild.id)
 
     def _manage_voice_capture(self,
                               member_updated: discord.Member,
@@ -129,6 +131,7 @@ class EventsCog(Cog, name="Event Handler"):
                 db.create_document(collection_name=USERS_COLLECTION,
                                    obj={
                                        "_id": user.id,
+                                       "user_name": user.name,
                                        "opted_in": opted_in
                                    })
             else:
