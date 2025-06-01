@@ -71,8 +71,7 @@ class GatewayCog(Cog, name="Command Gateway"):
             "respond_func": ctx.respond,
             "interaction": ctx.interaction,
             "user": ctx.author,
-            "guild": ctx.guild,
-            "channel": ctx.channel
+            "guild": ctx.guild
         }
         await self._join_vc_handler(**params)
 
@@ -80,21 +79,19 @@ class GatewayCog(Cog, name="Command Gateway"):
                                respond_func: Callable,
                                interaction: discord.Interaction,
                                user: discord.Member | discord.User,
-                               guild: discord.Guild,
-                               channel: discord.VoiceChannel) -> None:
+                               guild: discord.Guild) -> None:
         """Handler for `/joinvc` slash command"""
-        voice, statuses = await self._join_vc(respond_func, user, guild, channel)
+        voice = await self._join_vc(respond_func, user, guild)
         if voice is None:
             return
 
-        self._start_capturing_voice(voice, statuses)
+        self._start_capturing_voice(voice)
         await self._display_gui(respond_func, interaction)
 
     async def _join_vc(self,
                        respond_func: Callable,
                        user: discord.Member | discord.User,
-                       guild: discord.Guild,
-                       channel: discord.VoiceChannel) -> Tuple[discord.VoiceClient | None, Dict[discord.Member, bool]]:
+                       guild: discord.Guild) -> discord.VoiceClient | None:
         if user.voice is None:
             await respond_func(":warning: You must be in a voice channel")
             return (None, dict())
@@ -111,45 +108,11 @@ class GatewayCog(Cog, name="Command Gateway"):
         # Register voice session in DB
         db.create_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
                            obj={"_id": guild.id,
-                                "channel_id": channel.id})
+                                "channel_id": voice_client.channel.id})
 
-        # Fetch opted-in statuses of users in the voice channel
-        opted_in_statuses = GatewayCog.get_opted_in_statuses(bot=self.bot,
-                                                             users=voice_client.channel.members)
+        return voice_client
 
-        return (voice_client, opted_in_statuses)
-
-    @staticmethod
-    def get_opted_in_statuses(bot: discord.Bot, users: List[discord.Member]) -> Dict[discord.Member, bool]:
-        statuses = {}
-
-        for user in users:
-            if user.id == bot.user.id:  # skip the Clipped bot
-                continue
-
-            # Fetch users' `opt_in` status from DB
-            query_results = db.read_document(collection_name=USERS_COLLECTION,
-                                             filter={"_id": user.id},
-                                             projection={"_id": 0, "opted_in": 1})
-
-            # If user doesn't exist in DB, create new user document
-            opted_in = False  # default to opt-out status
-            if len(query_results) == 0:
-                db.create_document(collection_name=USERS_COLLECTION,
-                                   obj={
-                                       "_id": user.id,
-                                       "opted_in": opted_in
-                                   })
-            else:
-                opted_in = query_results[0]["opted_in"]
-
-            statuses[user] = opted_in
-
-        return statuses
-
-    def _start_capturing_voice(self,
-                               voice_client: discord.VoiceClient,
-                               opted_in_statuses: Dict[discord.Member, bool]) -> None:
+    def _start_capturing_voice(self, voice_client: discord.VoiceClient) -> None:
         pass
 
     async def _display_gui(self, respond_func: Callable, interaction: discord.Interaction) -> None:
