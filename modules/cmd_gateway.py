@@ -1,7 +1,6 @@
-import modules.database as db
 import views
-from typing import Callable, Dict, List, Tuple
-from bw_secrets import CLIPPED_SESSIONS_COLLECTION, USERS_COLLECTION, DEV_GUILD_ID
+from typing import Callable
+from bw_secrets import DEV_GUILD_ID
 
 import discord
 from discord.ext.commands import Cog

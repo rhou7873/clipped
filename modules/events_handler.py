@@ -1,5 +1,4 @@
-from bw_secrets import CLIPPED_SESSIONS_COLLECTION, USERS_COLLECTION, DEV_GUILD_ID
-from .cmd_gateway import GatewayCog
+from bw_secrets import CLIPPED_SESSIONS_COLLECTION, USERS_COLLECTION
 import modules.database as db
 
 import discord

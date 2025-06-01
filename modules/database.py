@@ -1,6 +1,6 @@
 import pymongo as mg
 from typing import List
-from bw_secrets import MONGO_CONN_STRING, MONGO_DB_NAME, USERS_COLLECTION
+from bw_secrets import MONGO_CONN_STRING, MONGO_DB_NAME
 
 
 db = mg.MongoClient(MONGO_CONN_STRING)[MONGO_DB_NAME]
