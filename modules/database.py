@@ -12,6 +12,13 @@ db = mg.MongoClient(MONGO_CONN_STRING)[MONGO_DB_NAME]
 #########################################################################
 
 
+def member_exists(guild_id: int, user_id: int) -> bool:
+    results = _read_document(collection_name=USERS_COLLECTION,
+                             filter={"_id": {"user_id": user_id, "guild_id": guild_id}},
+                             projection={"_id": 1})
+    return len(results) >= 1
+
+
 def get_opted_in_statuses(bot: discord.Bot,
                           members: List[discord.Member]) -> Dict[discord.Member, bool]:
     statuses = {}
@@ -21,14 +28,17 @@ def get_opted_in_statuses(bot: discord.Bot,
             continue
 
         # Fetch users' `opt_in` status from DB
+        guild = member.guild
         query_results = _read_document(collection_name=USERS_COLLECTION,
-                                      filter={"_id": member.id},
-                                      projection={"_id": 0, "opted_in": 1})
+                                       filter={"_id": {"user_id": member.id, "guild_id": guild.id}},
+                                       projection={"_id": 0, "opted_in": 1})
 
         # If user doesn't exist in DB, create new user document
         opted_in = True  # default to opt-in status
         if len(query_results) == 0:
-            set_opted_in_status(member, opted_in)
+            set_opted_in_status(guild=member.guild,
+                                user=member,
+                                opted_in=opted_in)
         else:
             opted_in = query_results[0]["opted_in"]
 
@@ -37,27 +47,28 @@ def get_opted_in_statuses(bot: discord.Bot,
     return statuses
 
 
-def set_opted_in_status(member: discord.Member, opted_in: bool) -> None:
-    guild = member.guild
-    unique_id = {"user_id": member.id, "guild_id": guild.id}
+def set_opted_in_status(guild: discord.Guild,
+                        user: discord.User | discord.Member,
+                        opted_in: bool) -> None:
+    unique_id = {"user_id": user.id, "guild_id": guild.id}
 
     # Check if user's opt-in preference for this server already exists
     results = _read_document(collection_name=USERS_COLLECTION,
-                            filter={"_id": unique_id},
-                            projection={"_id": 1})
+                             filter={"_id": unique_id},
+                             projection={"_id": 1})
 
     if len(results) < 1:  # create new document if not
         _create_document(collection_name=USERS_COLLECTION,
-                        obj={
-                            "_id": unique_id,
-                            "user_name": member.name,
-                            "guild_name": guild.name,
-                            "opted_in": opted_in
-                        })
+                         obj={
+                             "_id": unique_id,
+                             "user_name": user.name,
+                             "guild_name": guild.name,
+                             "opted_in": opted_in
+                         })
     else:  # otherwise, update existing document
         _update_document(collection_name=USERS_COLLECTION,
-                        filter={"_id": unique_id},
-                        update_query={"$set": {"opted_in": opted_in}})
+                         filter={"_id": unique_id},
+                         update_query={"$set": {"opted_in": opted_in}})
 
 
 def update_clipped_sessions(guild: discord.Guild,
@@ -70,14 +81,14 @@ def update_clipped_sessions(guild: discord.Guild,
     if bot_joined_vc:
         # Register voice session in DB
         _create_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
-                        obj={"_id": guild.id,
-                             "guild_name": guild.name,
-                             "channel_id": voice_channel.id,
-                             "channel_name": voice_channel.name})
+                         obj={"_id": guild.id,
+                              "guild_name": guild.name,
+                              "channel_id": voice_channel.id,
+                              "channel_name": voice_channel.name})
     elif bot_left_vc:
         # Remove voice session from DB
         _delete_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
-                        id=guild.id)
+                         id=guild.id)
 
 
 #########################################################################

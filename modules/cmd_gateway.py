@@ -1,4 +1,4 @@
-import views
+import ui
 from typing import Callable
 from bw_secrets import DEV_GUILD_ID
 import modules.database as db
@@ -111,7 +111,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         pass
 
     async def _display_gui(self, respond_func: Callable, interaction: discord.Interaction) -> None:
-        clipped_buttons = views.ControlsView(
+        clipped_buttons = ui.ControlsView(
             clip_that_func=self._clip_that_handler,
             leave_vc_func=self._leave_vc_handler)
         await respond_func(view=clipped_buttons)
@@ -167,7 +167,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         """Definition for `/optin` slash command."""
         params = {
             "respond_func": ctx.respond,
-            "create_dm_func": ctx.author.create_dm,
+            "dm": await ctx.author.create_dm(),
             "guild": ctx.guild,
             "member": ctx.author
         }
@@ -175,16 +175,19 @@ class GatewayCog(Cog, name="Command Gateway"):
 
     async def _opt_in_handler(self,
                               respond_func: Callable,
-                              create_dm_func: Callable,
+                              dm: discord.DMChannel,
                               guild: discord.Guild,
                               member: discord.Member):
         """Handler for `/optin` slash command."""
-        db.set_opted_in_status(member, opted_in=True)
+        db.set_opted_in_status(guild=guild,
+                               user=member,
+                               opted_in=True)
 
-        dm = await create_dm_func()
-        await dm.send("**OPT-IN CONFIRMATION**: You have ***opted in*** to audio "
-                      f"capture in '{guild.name}', meaning your voice ***will*** "
-                      "be heard in clips generated from that server.")
+        await dm.send("**OPT-IN CONFIRMATION**\n"
+                      f"You have ***opted in*** to audio capture in '{guild.name}', "
+                      "meaning your voice ***will*** be heard in clips generated "
+                      "from that server. This change will be reflected the next "
+                      "time the bot joins a voice channel.")
 
         await respond_func("Your opt-in preference has been updated")
 
@@ -200,7 +203,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         """Definition for `/optout` slash command."""
         params = {
             "respond_func": ctx.respond,
-            "create_dm_func": ctx.author.create_dm,
+            "dm": await ctx.author.create_dm(),
             "guild": ctx.guild,
             "member": ctx.author
         }
@@ -208,16 +211,19 @@ class GatewayCog(Cog, name="Command Gateway"):
 
     async def _opt_out_handler(self,
                                respond_func: Callable,
-                               create_dm_func: Callable,
+                               dm: discord.DMChannel,
                                guild: discord.Guild,
                                member: discord.Member) -> None:
         """Handler for `/optout` slash command."""
-        db.set_opted_in_status(member, opted_in=False)
+        db.set_opted_in_status(guild=guild,
+                               user=member,
+                               opted_in=False)
 
-        dm = await create_dm_func()
-        await dm.send("**OPT-OUT CONFIRMATION**: You have ***opted out*** of audio "
-                      f"capture in '{guild.name}', meaning your voice ***will not*** "
-                      "be heard in clips generated from that server.")
+        await dm.send("**OPT-OUT CONFIRMATION**\n"
+                      f"You have ***opted out*** of audio capture in '{guild.name}', "
+                      "meaning your voice ***will not*** be heard in clips generated "
+                      "from that server. This change will be reflected the next "
+                      "time the bot joins a voice channel.")
 
         await respond_func("Your opt-in preference has been updated")
 
