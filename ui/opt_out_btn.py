@@ -1,16 +1,17 @@
 import discord
-import modules.database as db
+from typing import Callable
 
 
 class OptOutButton(discord.ui.Button):
-    def __init__(self, guild: discord.Guild):
+    def __init__(self, member: discord.Member, opt_out_handler: Callable):
         super().__init__(label="Opt Out",
                          style=discord.ButtonStyle.red)
-        self.guild = guild
+        self.member = member
+        self.guild = member.guild
+        self.opt_out_handler = opt_out_handler
 
     async def callback(self, interaction: discord.Interaction):
-        db.set_opted_in_status(guild=self.guild,
-                               user=interaction.user,
-                               opted_in=False)
-        await interaction.respond(
-            f"You are now opted out of voice capture in the '{self.guild.name}' server")
+        await self.opt_out_handler(dm=await self.member.create_dm(),
+                                   guild=self.guild,
+                                   member=self.member)
+        await interaction.response.defer()

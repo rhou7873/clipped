@@ -94,16 +94,16 @@ class GatewayCog(Cog, name="Command Gateway"):
                        guild: discord.Guild) -> discord.VoiceClient | None:
         if user.voice is None:
             await respond_func(":warning: You must be in a voice channel")
-            return (None, dict())
+            return None
 
         try:
             voice_client: discord.VoiceClient = await user.voice.channel.connect()
         except discord.ClientException as e:
             await respond_func(":warning: I'm already connected to a voice channel")
-            return (None, dict())
+            return None
         except Exception as e:
             print(e)
-            return (None, dict())
+            return None
 
         return voice_client
 
@@ -166,18 +166,17 @@ class GatewayCog(Cog, name="Command Gateway"):
     async def cmd_opt_in(self, ctx: discord.ApplicationContext) -> None:
         """Definition for `/optin` slash command."""
         params = {
-            "respond_func": ctx.respond,
             "dm": await ctx.author.create_dm(),
             "guild": ctx.guild,
             "member": ctx.author
         }
-        await self._opt_in_handler(**params)
+        await GatewayCog.opt_in_handler(**params)
+        await ctx.respond("Your opt-in preference has been updated")
 
-    async def _opt_in_handler(self,
-                              respond_func: Callable,
-                              dm: discord.DMChannel,
-                              guild: discord.Guild,
-                              member: discord.Member):
+    @staticmethod
+    async def opt_in_handler(dm: discord.DMChannel,
+                             guild: discord.Guild,
+                             member: discord.Member):
         """Handler for `/optin` slash command."""
         db.set_opted_in_status(guild=guild,
                                user=member,
@@ -188,8 +187,6 @@ class GatewayCog(Cog, name="Command Gateway"):
                       "meaning your voice ***will*** be heard in clips generated "
                       "from that server. This change will be reflected the next "
                       "time the bot joins a voice channel.")
-
-        await respond_func("Your opt-in preference has been updated")
 
     ################################################################
     ########################## OPT-OUT #############################
@@ -202,18 +199,17 @@ class GatewayCog(Cog, name="Command Gateway"):
     async def cmd_opt_out(self, ctx: discord.ApplicationContext) -> None:
         """Definition for `/optout` slash command."""
         params = {
-            "respond_func": ctx.respond,
             "dm": await ctx.author.create_dm(),
             "guild": ctx.guild,
             "member": ctx.author
         }
-        await self._opt_out_handler(**params)
+        await GatewayCog.opt_out_handler(**params)
+        await ctx.respond("Your opt-in preference has been updated")
 
-    async def _opt_out_handler(self,
-                               respond_func: Callable,
-                               dm: discord.DMChannel,
-                               guild: discord.Guild,
-                               member: discord.Member) -> None:
+    @staticmethod
+    async def opt_out_handler(dm: discord.DMChannel,
+                              guild: discord.Guild,
+                              member: discord.Member) -> None:
         """Handler for `/optout` slash command."""
         db.set_opted_in_status(guild=guild,
                                user=member,
@@ -224,8 +220,6 @@ class GatewayCog(Cog, name="Command Gateway"):
                       "meaning your voice ***will not*** be heard in clips generated "
                       "from that server. This change will be reflected the next "
                       "time the bot joins a voice channel.")
-
-        await respond_func("Your opt-in preference has been updated")
 
     ################################################################
     ########################## CLIP SEARCH #########################

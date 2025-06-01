@@ -1,5 +1,6 @@
-from bw_secrets import CLIPPED_SESSIONS_COLLECTION, USERS_COLLECTION
+from bw_secrets import CLIPPED_SESSIONS_COLLECTION
 import modules.database as db
+from modules.cmd_gateway import GatewayCog
 import ui
 
 import discord
@@ -52,7 +53,7 @@ class EventsCog(Cog, name="Event Handler"):
         bot_left_vc = member_updated.id == self.bot.user.id and after.channel is None
         user_joined_bot_vc = after.channel is not None and after.channel.id == bot_channel_id
 
-        if member_updated.id == self.bot.user.id:  # when bot leaves/joins VC 
+        if member_updated.id == self.bot.user.id:  # when bot leaves/joins VC
             db.update_clipped_sessions(guild=guild,
                                        voice_channel=after.channel if bot_joined_vc else before.channel,
                                        bot_joined_vc=bot_joined_vc,
@@ -77,8 +78,11 @@ class EventsCog(Cog, name="Event Handler"):
 
             if not db.member_exists(guild_id=member.guild.id, user_id=member.id):
                 dm = await member.create_dm()
-                view = ui.OptInView(
-                    member.guild, show_opt_in=True, show_opt_out=True)
+                view = ui.OptInView(member=member,
+                                    opt_in_handler=GatewayCog.opt_in_handler,
+                                    opt_out_handler=GatewayCog.opt_out_handler,
+                                    show_opt_in=True,
+                                    show_opt_out=True)
                 await dm.send("**OPT-IN PREFERENCE OPTIONS**\n"
                               "Your voice is currently being captured by the Clipped bot in "
                               f"the '{member.guild.name}' server for any audio clips generated. "
