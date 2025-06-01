@@ -1,7 +1,6 @@
 import pymongo as mg
-import os
 from typing import List
-from bw_secrets import MONGO_CONN_STRING, MONGO_DB_NAME
+from bw_secrets import MONGO_CONN_STRING, MONGO_DB_NAME, USERS_COLLECTION
 
 
 db = mg.MongoClient(MONGO_CONN_STRING)[MONGO_DB_NAME]
@@ -9,6 +8,7 @@ db = mg.MongoClient(MONGO_CONN_STRING)[MONGO_DB_NAME]
 #########################################################################
 ####################### LOW-LEVEL CRUD OPERATIONS #######################
 #########################################################################
+
 
 def create_document(collection_name: str, obj) -> str:
     if collection_name not in db.list_collection_names():
@@ -30,8 +30,16 @@ def read_document(collection_name: str, filter, projection=None) -> List:
     return results
 
 
-def update_document():
-    pass
+def update_document(collection_name: str, filter, update_query) -> None:
+    if collection_name not in db.list_collection_names():
+        raise Exception(f"Collection name '{collection_name}' doesn't exist")
+
+    collection = db[collection_name]
+    result = collection.update_one(filter, update_query)
+
+    if result.matched_count < 1:
+        raise Exception(
+            f"No documents were updated (collection={collection_name}, filter={filter})")
 
 
 def delete_document(collection_name: str, id: str) -> None:
