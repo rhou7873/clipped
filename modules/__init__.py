@@ -3,3 +3,4 @@ from .database import (create_document,
                        read_document,
                        update_document,
                        delete_document)
+from .events_handler import EventsCog

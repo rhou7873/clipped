@@ -12,6 +12,7 @@ def main():
 
     bot: commands.Bot = commands.Bot(command_prefix="clip", intents=intents)
     bot.load_extension("modules.cmd_gateway")
+    bot.load_extension("modules.events_handler")
 
     bot.run(BOT_TOKEN)
 
