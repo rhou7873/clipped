@@ -2,7 +2,8 @@ import discord
 import pymongo as mg
 from typing import List, Dict
 from bw_secrets import (MONGO_CONN_STRING, MONGO_DB_NAME,
-                        CLIPPED_SESSIONS_COLLECTION, USERS_COLLECTION)
+                        CLIPPED_SESSIONS_COLLECTION, USERS_COLLECTION,
+                        BOT_USER_ID)
 
 db = mg.MongoClient(MONGO_CONN_STRING)[MONGO_DB_NAME]
 
@@ -24,12 +25,11 @@ def member_exists(guild_id: int, user_id: int) -> bool:
     return len(results) >= 1
 
 
-def get_opted_in_statuses(bot: discord.Bot,
-                          members: List[discord.Member]) -> Dict[discord.Member, bool]:
+def get_opted_in_statuses(members: List[discord.Member]) -> Dict[discord.Member, bool]:
     statuses = {}
 
     for member in members:
-        if member.id == bot.user.id:  # skip the Clipped bot
+        if member.id == BOT_USER_ID:  # skip the Clipped bot
             continue
 
         # Fetch users' `opt_in` status from DB

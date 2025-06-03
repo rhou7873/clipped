@@ -93,11 +93,11 @@ class EventsCog(Cog, name="Event Handler"):
         # before we start capturing voice data
         new_opted_in_statuses = {}
         if bot_joined_vc:
-            new_opted_in_statuses = db.get_opted_in_statuses(bot=self.bot,
-                                                             members=voice_channel.members)
+            new_opted_in_statuses = db.get_opted_in_statuses(
+                members=voice_channel.members)
         elif user_joined_bot_vc:
-            new_opted_in_statuses = db.get_opted_in_statuses(bot=self.bot,
-                                                             members=[member_updated])
+            new_opted_in_statuses = db.get_opted_in_statuses(
+                members=[member_updated])
 
         # TODO: now that we have opted-in statuses (of all users in VC that bot joined,
         # or of the single member that just joined the VC), we want to use this information
