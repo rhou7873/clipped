@@ -61,7 +61,7 @@ class EventsCog(Cog, name="Event Handler"):
             # cmd_gateway._leave_vc()), but ensures voice client
             # is truly disconnected when user "right-click > disconnect"s
             # instead of using /leavevc or clicking "Leave" button
-            DataStreamer.streams[guild.id].voice.disconnect(force=True)
+            await DataStreamer.streams[guild.id].voice.disconnect(force=True)
             del DataStreamer.streams[guild.id]
 
     async def _notify_opt_in_options(self, voice_channel: discord.VoiceChannel) -> None:
