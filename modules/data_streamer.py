@@ -12,6 +12,8 @@ from typing import Dict, List
 class DataStreamer:
     streams: Dict[int, DataStreamer] = {}
     """Maps server IDs to their DataStreamer instance if there's an active Clipped session"""
+    CHUNK_SIZE = 1
+    """Size of audio chunks in buffer, in seconds"""
 
     def __init__(self, voice: discord.VoiceClient, clip_size: int = 30):
         self.audio_data_buffer: List[dict] = []
@@ -41,7 +43,7 @@ class DataStreamer:
             current_chunk = sink.audio_data
 
             # Flush oldest chunk and add new chunk
-            if len(self.audio_data_buffer) >= 2:
+            if len(self.audio_data_buffer) >= self.clip_size // DataStreamer.CHUNK_SIZE:
                 self.audio_data_buffer.pop(0)
             self.audio_data_buffer.append(current_chunk)
             print(self.audio_data_buffer)
@@ -55,7 +57,7 @@ class DataStreamer:
                 sink = PCMSink()
 
                 self.voice.start_recording(sink, callback)
-                await asyncio.sleep(self.clip_size)
+                await asyncio.sleep(DataStreamer.CHUNK_SIZE)
                 self.voice.stop_recording()
 
                 await sink_processed.wait()
