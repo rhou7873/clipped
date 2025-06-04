@@ -1,8 +1,10 @@
-from bw_secrets import CLIPPED_SESSIONS_COLLECTION
-import modules.database as db
+# Clipped modules
+from bw_secrets import CLIPPED_SESSIONS_COLLECTION, BOT_USER_ID
 from modules.cmd_gateway import GatewayCog
+import modules.database as db
 import ui
 
+# Pycord modules
 import discord
 from discord.ext.commands import Cog
 from discord.ext import commands
@@ -49,11 +51,11 @@ class EventsCog(Cog, name="Event Handler"):
         # `bot_joined_vc`: bot joined a VC with users in it
         # `bot_left_vc`: bot left a VC that it was in
         # `user_joined_bot_vc`: user joins VC with the bot in it
-        bot_joined_vc = member_updated.id == self.bot.user.id and after.channel is not None
-        bot_left_vc = member_updated.id == self.bot.user.id and after.channel is None
+        bot_joined_vc = member_updated.id == BOT_USER_ID and after.channel is not None
+        bot_left_vc = member_updated.id == BOT_USER_ID and after.channel is None
         user_joined_bot_vc = after.channel is not None and after.channel.id == bot_channel_id
 
-        if member_updated.id == self.bot.user.id:  # when bot leaves/joins VC
+        if member_updated.id == BOT_USER_ID:  # when bot leaves/joins VC
             db.update_clipped_sessions(guild=guild,
                                        voice_channel=after.channel if bot_joined_vc else before.channel,
                                        bot_joined_vc=bot_joined_vc,
@@ -73,7 +75,7 @@ class EventsCog(Cog, name="Event Handler"):
         # If members in voice channel don't exist in database yet (i.e. first interaction
         # with the bot), then send them DM w/ opt-in preference options
         for member in voice_channel.members:
-            if member.id == self.bot.user.id:  # skip the bot itself
+            if member.id == BOT_USER_ID:  # skip the bot itself
                 continue
 
             if not db.member_exists(guild_id=member.guild.id, user_id=member.id):
