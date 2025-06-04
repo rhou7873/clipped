@@ -1,7 +1,9 @@
+import asyncio
 import ui
 from typing import Callable
 from bw_secrets import DEV_GUILD_ID
 import modules.database as db
+from modules.data_streamer import DataStreamer
 
 import discord
 from discord.ext.commands import Cog
@@ -81,7 +83,7 @@ class GatewayCog(Cog, name="Command Gateway"):
                                user: discord.Member | discord.User,
                                guild: discord.Guild) -> None:
         """Handler for `/joinvc` slash command"""
-        voice = await self._join_vc(respond_func, user, guild)
+        voice = await self._join_vc(respond_func, user)
         if voice is None:
             return
 
@@ -90,8 +92,7 @@ class GatewayCog(Cog, name="Command Gateway"):
 
     async def _join_vc(self,
                        respond_func: Callable,
-                       user: discord.Member | discord.User,
-                       guild: discord.Guild) -> discord.VoiceClient | None:
+                       user: discord.Member | discord.User) -> discord.VoiceClient | None:
         if user.voice is None:
             await respond_func(":warning: You must be in a voice channel")
             return None
@@ -108,7 +109,8 @@ class GatewayCog(Cog, name="Command Gateway"):
         return voice_client
 
     def _start_capturing_voice(self, voice_client: discord.VoiceClient) -> None:
-        pass
+        streamer = DataStreamer(voice_client, clip_size=5)
+        asyncio.get_event_loop().create_task(streamer.start())
 
     async def _display_gui(self, respond_func: Callable, interaction: discord.Interaction) -> None:
         clipped_buttons = ui.ControlsView(
@@ -136,15 +138,15 @@ class GatewayCog(Cog, name="Command Gateway"):
     async def _leave_vc_handler(self, respond_func: Callable, guild: discord.Guild) -> None:
         """Handler for `/leavevc` slash command."""
         await self._remove_gui()
-        self._stop_capturing_voice()
+        self._stop_capturing_voice(guild)
         await self._leave_vc(respond_func, guild)
         await respond_func("No longer capturing audio for clips")
 
     async def _remove_gui(self):
         await self.last_ui_message.delete()
 
-    def _stop_capturing_voice(self):
-        pass
+    def _stop_capturing_voice(self, guild: discord.Guild):
+        DataStreamer.streams[guild.id].stop()
 
     async def _leave_vc(self, respond_func: Callable, guild: discord.Guild) -> None:
         bot_voice = guild.voice_client
