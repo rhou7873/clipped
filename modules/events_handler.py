@@ -74,6 +74,7 @@ class EventsCog(Cog, name="Event Handler"):
                 continue
 
             if not db.member_exists(guild_id=member.guild.id, user_id=member.id):
+                db.set_opted_in_status(member.guild, member, opted_in=True)
                 dm = await member.create_dm()
                 view = ui.OptInView(member=member,
                                     opt_in_handler=GatewayCog.opt_in_handler,
