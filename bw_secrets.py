@@ -33,8 +33,8 @@ client.access_token_login(ACCESS_TOKEN)
 # Discord
 BOT_TOKEN = client.secrets().get(
     "af2e1610-c629-4ea9-9610-b2dd0000988a").data.value
-BOT_USER_ID = client.secrets().get(
-    "4d0d8088-0f76-44d7-a6a1-b2f10121a529").data.value
+BOT_USER_ID = int(client.secrets().get(
+    "4d0d8088-0f76-44d7-a6a1-b2f10121a529").data.value)
 DEV_GUILD_ID = client.secrets().get(
     "d0f6db4e-fecb-4ec4-adab-b2dd0000a6fa").data.value
 DISCORD_API_URL = client.secrets().get(
