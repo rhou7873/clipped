@@ -12,10 +12,8 @@ from typing import Dict, List
 class DataStreamer:
     streams: Dict[int, DataStreamer] = {}
     """Maps server IDs to their DataStreamer instance if there's an active Clipped session"""
-    CHUNK_SIZE = 1
-    """Size of audio chunks in buffer, in seconds"""
 
-    def __init__(self, voice: discord.VoiceClient, clip_size: int = 30):
+    def __init__(self, voice: discord.VoiceClient, clip_size: int = 30, chunk_size: int = 1):
         self.audio_data_buffer: List[dict] = []
         """Buffer of audio data, straight from Pycord"""
         self.voice = voice
@@ -24,6 +22,8 @@ class DataStreamer:
         """Indicates whether or not we're actively capturing audio"""
         self.clip_size = clip_size
         """Size of clips in seconds"""
+        self.chunk_size = chunk_size
+        """Size of audio chunks in buffer, in seconds"""
         self.stream_loop_task = None
         """Task that's running the loop to stream voice data from Discord"""
 
@@ -43,10 +43,9 @@ class DataStreamer:
             current_chunk = sink.audio_data
 
             # Flush oldest chunk and add new chunk
-            if len(self.audio_data_buffer) >= self.clip_size // DataStreamer.CHUNK_SIZE:
+            if len(self.audio_data_buffer) >= self.clip_size // self.chunk_size:
                 self.audio_data_buffer.pop(0)
             self.audio_data_buffer.append(current_chunk)
-            print(self.audio_data_buffer)
 
             sink_processed.set()
             sink_processed.clear()
@@ -57,7 +56,7 @@ class DataStreamer:
                 sink = PCMSink()
 
                 self.voice.start_recording(sink, callback)
-                await asyncio.sleep(DataStreamer.CHUNK_SIZE)
+                await asyncio.sleep(self.chunk_size)
                 self.voice.stop_recording()
 
                 await sink_processed.wait()

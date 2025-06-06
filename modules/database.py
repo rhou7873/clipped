@@ -25,6 +25,12 @@ def member_exists(guild_id: int, user_id: int) -> bool:
     return len(results) >= 1
 
 
+def get_opted_in_members(members: List[discord.Member]) -> List[discord.Member]:
+    statuses = get_opted_in_statuses(members)
+    opted_in = [member for member, opted_in in statuses.items() if opted_in]
+    return opted_in
+
+
 def get_opted_in_statuses(members: List[discord.Member]) -> Dict[discord.Member, bool]:
     statuses = {}
 

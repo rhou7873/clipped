@@ -1,3 +1,4 @@
 bitwarden-sdk==0.1.0
+pydub
 pymongo
 py-cord[voice]

@@ -4,6 +4,7 @@ from typing import Callable
 from bw_secrets import DEV_GUILD_ID
 import modules.database as db
 from modules.data_streamer import DataStreamer
+from modules.data_processor import DataProcessor
 
 import discord
 from discord.ext.commands import Cog
@@ -12,6 +13,9 @@ from discord.ext import commands
 
 class GatewayCog(Cog, name="Command Gateway"):
     """Encapsulates all of Clipped's supported commands"""
+
+    CLIP_SIZE = 30
+    CHUNK_SIZE = 1
 
     def __init__(self, bot: discord.Bot):
         self.bot = bot
@@ -54,10 +58,31 @@ class GatewayCog(Cog, name="Command Gateway"):
         guild_ids=[DEV_GUILD_ID])
     async def cmd_clip_that(self, ctx: discord.ApplicationContext):
         """Definition for `/clipthat` slash command."""
-        pass
+        params = {
+            "respond_func": ctx.respond,
+            "guild": ctx.guild,
+            "voice_client": ctx.voice_client,
+            "send": ctx.send
+        }
+        await self._clip_that_handler(**params)
 
-    async def _clip_that_handler(self):
-        pass
+    async def _clip_that_handler(self,
+                                 respond_func: Callable,
+                                 guild: discord.Guild,
+                                 voice_client: discord.VoiceClient, send):
+        async def get_clip():
+            streamer = DataStreamer.streams[guild.id]
+            processor = DataProcessor(voice_client=voice_client,
+                                      audio_data_buffer=streamer.audio_data_buffer,
+                                      clip_size=GatewayCog.CLIP_SIZE,
+                                      chunk_size=GatewayCog.CHUNK_SIZE)
+
+            clip_bytes = await processor.process_audio_data(send=send)
+
+            file = discord.File(clip_bytes, filename="clip.wav")
+            await respond_func(file=file)
+
+        asyncio.get_event_loop().create_task(get_clip())
 
     ################################################################
     ######################### JOINING VOICE ########################
@@ -109,7 +134,9 @@ class GatewayCog(Cog, name="Command Gateway"):
         return voice_client
 
     def _start_capturing_voice(self, voice_client: discord.VoiceClient) -> None:
-        streamer = DataStreamer(voice_client, clip_size=5)
+        streamer = DataStreamer(voice=voice_client,
+                                clip_size=GatewayCog.CLIP_SIZE,
+                                chunk_size=GatewayCog.CHUNK_SIZE)
         asyncio.get_event_loop().create_task(streamer.start())
 
     async def _display_gui(self, respond_func: Callable, interaction: discord.Interaction) -> None:
