@@ -75,17 +75,20 @@ class DataProcessor:
                                                .from_file(user_audio_data, format="wav"))
 
                 # compute left padding needed
+                eps = 50
                 segment_size_ms = int(segment.duration_seconds * 1000)
                 target_size_ms = int(self.chunk_size * 1000)
                 padding_size_ms = target_size_ms - segment_size_ms
 
-                if padding_size_ms < 0:
+                if padding_size_ms < -eps:
                     raise Exception(
-                        "Length of audio chunk for a user shouldn't be longer than chunk size")
+                        "Length of audio chunk for a user shouldn't be longer "
+                        f"than chunk size, segment_size_ms={segment_size_ms}, "
+                        f"target_size_ms={target_size_ms}")
 
                 # generate silence
                 silence = (pydub.AudioSegment
-                           .silent(duration=padding_size_ms)
+                           .silent(duration=max(padding_size_ms, 0))
                            .set_channels(self.channels)
                            .set_sample_width(self.sampling_width)
                            .set_frame_rate(self.sampling_rate))
