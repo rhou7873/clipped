@@ -109,8 +109,8 @@ class DataProcessor:
 
             # iteratively overlay all the users' voices
             for _, user_audio_data in chunk.items():
-                overlayed_wav_chunk = overlayed_wav_chunk.overlay(
-                    user_audio_data)
+                overlayed_wav_chunk = (overlayed_wav_chunk
+                                       .overlay(user_audio_data))
 
             overlayed_wav_chunks.append(overlayed_wav_chunk)
 

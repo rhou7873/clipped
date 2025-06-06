@@ -58,6 +58,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         guild_ids=[DEV_GUILD_ID])
     async def cmd_clip_that(self, ctx: discord.ApplicationContext):
         """Definition for `/clipthat` slash command."""
+        await ctx.defer()  # make take a while to process, this extends timeout
         params = {
             "respond_func": ctx.respond,
             "guild": ctx.guild,
