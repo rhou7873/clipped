@@ -6,7 +6,6 @@ import discord
 import discord.sinks as sinks
 
 # Other modules
-import asyncio
 import io
 import pydub
 from typing import Dict, List
