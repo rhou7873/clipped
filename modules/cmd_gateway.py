@@ -33,13 +33,18 @@ class GatewayCog(Cog, name="Command Gateway"):
         """Definition for `/buttons` slash command."""
         params = {
             "respond_func": ctx.respond,
-            "interaction": ctx.interaction
+            "interaction": ctx.interaction,
+            "user": ctx.author
         }
         await self._buttons_handler(**params)
 
     async def _buttons_handler(self,
                                respond_func: Callable,
-                               interaction: discord.Interaction) -> None:
+                               interaction: discord.Interaction,
+                               user: discord.Member) -> None:
+        if user.voice is None:
+            await respond_func(":warning: You must be in a voice channel")
+            return
         if self.last_ui_message is None:
             await respond_func(":warning: Make sure you've started a Clipped "
                                "session with `/joinvc`")
@@ -63,14 +68,19 @@ class GatewayCog(Cog, name="Command Gateway"):
             "respond_func": ctx.respond,
             "guild": ctx.guild,
             "voice_client": ctx.voice_client,
-            "send": ctx.send
+            "user": ctx.author
         }
         await self._clip_that_handler(**params)
 
     async def _clip_that_handler(self,
                                  respond_func: Callable,
                                  guild: discord.Guild,
-                                 voice_client: discord.VoiceClient, send):
+                                 voice_client: discord.VoiceClient,
+                                 user: discord.Member) -> None:
+        if user.voice is None:
+            await respond_func(":warning: You must be in a voice channel")
+            return
+        
         async def get_clip():
             streamer = DataStreamer.streams[guild.id]
             processor = DataProcessor(voice_client=voice_client,
@@ -106,9 +116,13 @@ class GatewayCog(Cog, name="Command Gateway"):
     async def _join_vc_handler(self,
                                respond_func: Callable,
                                interaction: discord.Interaction,
-                               user: discord.Member | discord.User,
+                               user: discord.Member,
                                guild: discord.Guild) -> None:
         """Handler for `/joinvc` slash command"""
+        if user.voice is None:
+            await respond_func(":warning: You must be in a voice channel")
+            return
+
         voice = await self._join_vc(respond_func, user)
         if voice is None:
             return
@@ -118,11 +132,7 @@ class GatewayCog(Cog, name="Command Gateway"):
 
     async def _join_vc(self,
                        respond_func: Callable,
-                       user: discord.Member | discord.User) -> discord.VoiceClient | None:
-        if user.voice is None:
-            await respond_func(":warning: You must be in a voice channel")
-            return None
-
+                       user: discord.Member) -> discord.VoiceClient | None:
         try:
             voice_client: discord.VoiceClient = await user.voice.channel.connect()
         except discord.ClientException as e:
@@ -159,12 +169,20 @@ class GatewayCog(Cog, name="Command Gateway"):
         """Definition for `/leavevc` slash command."""
         params = {
             "respond_func": ctx.respond,
-            "guild": ctx.guild
+            "guild": ctx.guild,
+            "user": ctx.author
         }
         await self._leave_vc_handler(**params)
 
-    async def _leave_vc_handler(self, respond_func: Callable, guild: discord.Guild) -> None:
+    async def _leave_vc_handler(self,
+                                respond_func: Callable,
+                                guild: discord.Guild,
+                                user: discord.Member) -> None:
         """Handler for `/leavevc` slash command."""
+        if user.voice is None:
+            await respond_func(":warning: You must be in a voice channel")
+            return None
+
         await self._remove_gui()
         self._stop_capturing_voice(guild)
         await self._leave_vc(respond_func, guild)
