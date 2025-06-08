@@ -181,8 +181,8 @@ class GatewayCog(Cog, name="Command Gateway"):
         """Handler for `/leavevc` slash command."""
         if user.voice is None:
             await respond_func(":warning: You must be in a voice channel")
-            return None
-
+            return
+        
         await self._remove_gui()
         self._stop_capturing_voice(guild)
         await self._leave_vc(respond_func, guild)

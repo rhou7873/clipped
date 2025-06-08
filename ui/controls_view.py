@@ -17,4 +17,5 @@ class ControlsView(discord.ui.View):
                        style=discord.ButtonStyle.danger)
     async def btn_leave_vc(self, button: discord.ui.Button, interaction: discord.Interaction):
         await self.leave_vc_func(respond_func=interaction.respond,
-                                 guild=interaction.guild)
+                                 guild=interaction.guild,
+                                 user=interaction.user)
