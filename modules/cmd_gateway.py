@@ -88,7 +88,7 @@ class GatewayCog(Cog, name="Command Gateway"):
                                       clip_size=GatewayCog.CLIP_SIZE,
                                       chunk_size=GatewayCog.CHUNK_SIZE)
 
-            clip_bytes = await processor.process_audio_data()
+            clip_bytes = await processor.process_audio_data(send=send)
 
             file = discord.File(clip_bytes, filename="clip.wav")
             await respond_func(file=file)
@@ -234,7 +234,7 @@ class GatewayCog(Cog, name="Command Gateway"):
                       f"You have ***opted in*** to audio capture in '{guild.name}', "
                       "meaning your voice ***will*** be heard in clips generated "
                       "from that server. This change will be reflected the next "
-                      "time the bot joins a voice channel.")
+                      "time a clip is generated.")
 
     ################################################################
     ########################## OPT-OUT #############################
@@ -267,7 +267,7 @@ class GatewayCog(Cog, name="Command Gateway"):
                       f"You have ***opted out*** of audio capture in '{guild.name}', "
                       "meaning your voice ***will not*** be heard in clips generated "
                       "from that server. This change will be reflected the next "
-                      "time the bot joins a voice channel.")
+                      "time a clip is generated.")
 
     ################################################################
     ########################## CLIP SEARCH #########################
