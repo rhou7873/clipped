@@ -88,7 +88,7 @@ class GatewayCog(Cog, name="Command Gateway"):
                                       clip_size=GatewayCog.CLIP_SIZE,
                                       chunk_size=GatewayCog.CHUNK_SIZE)
 
-            clip_bytes = await processor.process_audio_data(send=send)
+            clip_bytes = await processor.process_audio_data()
 
             file = discord.File(clip_bytes, filename="clip.wav")
             await respond_func(file=file)

@@ -43,7 +43,7 @@ class DataStreamer:
             current_chunk = sink.audio_data
 
             # Flush oldest chunk and add new chunk
-            if len(self.audio_data_buffer) >= self.clip_size // self.chunk_size:
+            if len(self.audio_data_buffer) * self.chunk_size > self.clip_size:
                 self.audio_data_buffer.pop(0)
             self.audio_data_buffer.append(current_chunk)
 
