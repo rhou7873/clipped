@@ -43,7 +43,6 @@ class EventsCog(Cog, name="Event Handler"):
 
         # `bot_joined_vc`: bot joined a VC with users in it
         # `bot_left_vc`: bot left a VC that it was in
-        # `user_joined_bot_vc`: user joins VC with the bot in it
         bot_joined_vc = member_updated.id == BOT_USER_ID and after.channel is not None
         bot_left_vc = member_updated.id == BOT_USER_ID and after.channel is None
 
