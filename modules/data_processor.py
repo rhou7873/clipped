@@ -1,4 +1,5 @@
 # Clipped modules
+from modules.data_streamer import DataStreamer
 import modules.database as db
 
 # Pycord modules
@@ -13,18 +14,14 @@ import wave
 
 
 class DataProcessor:
-    def __init__(self,
-                 voice_client: discord.VoiceClient,
-                 audio_data_buffer: List[Dict[int, sinks.AudioData]],
-                 clip_size: int = 30,
-                 chunk_size: int = 1):
+    def __init__(self, voice_client: discord.VoiceClient, streamer: DataStreamer):
         self.vc = voice_client
         """Client of voice channel that this audio data is coming from"""
-        self.audio_data_buffer = audio_data_buffer
-        """Buffer of audio data, straight from Pycord"""
-        self.clip_size = clip_size
+        self.streamer = streamer
+        """DataStreamer object whose audio data we're processing"""
+        self.clip_size = streamer.clip_size
         """The size of a clip, in seconds"""
-        self.chunk_size = chunk_size
+        self.chunk_size = streamer.chunk_size
         """Size of audio chunks in buffer, in seconds"""
 
         # WAV header parameters
@@ -41,7 +38,7 @@ class DataProcessor:
         opted_in = [member.id
                     for member in db.get_opted_in_members(self.vc.channel.members)]
         filtered_data: List[Dict[int, sinks.AudioData]] = []
-        for chunk in self.audio_data_buffer:
+        for chunk in self.streamer.audio_data_buffer:
             filtered_chunk = {user_id: data
                               for user_id, data in chunk.items()
                               if user_id in opted_in}

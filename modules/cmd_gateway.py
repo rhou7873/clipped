@@ -1,10 +1,17 @@
-import asyncio
-import ui
-from typing import Callable
+# Clipped modules
 from bw_secrets import DEV_GUILD_ID
+from models import ClippedSession
 import modules.database as db
-from modules.data_streamer import DataStreamer
 from modules.data_processor import DataProcessor
+from modules.data_streamer import DataStreamer 
+import ui
+
+# Pycord modules
+
+# Other modules
+import asyncio
+from typing import Callable, Dict
+
 
 import discord
 from discord.ext.commands import Cog
@@ -16,10 +23,11 @@ class GatewayCog(Cog, name="Command Gateway"):
 
     CLIP_SIZE = 30
     CHUNK_SIZE = 1
+    
+    clipped_sessions: Dict[int, ClippedSession] = {}
 
     def __init__(self, bot: discord.Bot):
         self.bot = bot
-        self.last_ui_message = None
 
     ################################################################
     #################### RESEND CONTROL BUTTONS ####################
@@ -32,6 +40,7 @@ class GatewayCog(Cog, name="Command Gateway"):
     async def cmd_buttons(self, ctx: discord.ApplicationContext):
         """Definition for `/buttons` slash command."""
         params = {
+            "guild": ctx.guild,
             "respond_func": ctx.respond,
             "interaction": ctx.interaction,
             "user": ctx.author
@@ -39,18 +48,20 @@ class GatewayCog(Cog, name="Command Gateway"):
         await self._buttons_handler(**params)
 
     async def _buttons_handler(self,
+                               guild: discord.Guild,
                                respond_func: Callable,
                                interaction: discord.Interaction,
                                user: discord.Member) -> None:
         if user.voice is None:
             await respond_func(":warning: You must be in a voice channel")
             return
-        if self.last_ui_message is None:
+        if GatewayCog.clipped_sessions[guild.id].last_ui_message is None:
             await respond_func(":warning: Make sure you've started a Clipped "
                                "session with `/joinvc`")
             return
 
-        await self.last_ui_message.delete()  # delete the old control buttons
+        # delete old control buttons
+        await GatewayCog.clipped_sessions[guild.id].last_ui_message.delete()
         await self._display_gui(respond_func, interaction)
 
     ################################################################
@@ -80,7 +91,7 @@ class GatewayCog(Cog, name="Command Gateway"):
         if user.voice is None:
             await respond_func(":warning: You must be in a voice channel")
             return
-        
+
         async def get_clip():
             streamer = DataStreamer.streams[guild.id]
             processor = DataProcessor(voice_client=voice_client,
@@ -88,7 +99,7 @@ class GatewayCog(Cog, name="Command Gateway"):
                                       clip_size=GatewayCog.CLIP_SIZE,
                                       chunk_size=GatewayCog.CHUNK_SIZE)
 
-            clip_bytes = await processor.process_audio_data(send=send)
+            clip_bytes = await processor.process_audio_data()
 
             file = discord.File(clip_bytes, filename="clip.wav")
             await respond_func(file=file)
@@ -127,8 +138,8 @@ class GatewayCog(Cog, name="Command Gateway"):
         if voice is None:
             return
 
-        self._start_capturing_voice(voice)
-        await self._display_gui(respond_func, interaction)
+        self._start_capturing_voice(voice, user)
+        await self._display_gui(guild, respond_func, interaction)
 
     async def _join_vc(self,
                        respond_func: Callable,
@@ -144,18 +155,24 @@ class GatewayCog(Cog, name="Command Gateway"):
 
         return voice_client
 
-    def _start_capturing_voice(self, voice_client: discord.VoiceClient) -> None:
-        streamer = DataStreamer(voice=voice_client,
-                                clip_size=GatewayCog.CLIP_SIZE,
-                                chunk_size=GatewayCog.CHUNK_SIZE)
-        asyncio.get_event_loop().create_task(streamer.start())
+    def _start_capturing_voice(self,
+                               voice: discord.VoiceClient,
+                               user: discord.Member) -> None:
+        guild = voice.guild
+        GatewayCog.clipped_sessions[guild.id] = ClippedSession(voice=voice,
+                                                         started_by=user,
+                                                         clip_size=GatewayCog.CLIP_SIZE,
+                                                         chunk_size=GatewayCog.CHUNK_SIZE)
 
-    async def _display_gui(self, respond_func: Callable, interaction: discord.Interaction) -> None:
+    async def _display_gui(self,
+                           guild: discord.Guild,
+                           respond_func: Callable,
+                           interaction: discord.Interaction) -> None:
         clipped_buttons = ui.ControlsView(
             clip_that_func=self._clip_that_handler,
             leave_vc_func=self._leave_vc_handler)
         await respond_func(view=clipped_buttons)
-        self.last_ui_message = await interaction.original_response()
+        GatewayCog.clipped_sessions[guild.id].last_ui_message = await interaction.original_response()
 
     ################################################################
     ######################### LEAVING VOICE ########################
@@ -182,17 +199,18 @@ class GatewayCog(Cog, name="Command Gateway"):
         if user.voice is None:
             await respond_func(":warning: You must be in a voice channel")
             return
-        
-        await self._remove_gui()
+
+        await self._remove_gui(guild)
         self._stop_capturing_voice(guild)
         await self._leave_vc(respond_func, guild)
         await respond_func("No longer capturing audio for clips")
 
-    async def _remove_gui(self):
-        await self.last_ui_message.delete()
+    async def _remove_gui(self, guild: discord.Guild):
+        await GatewayCog.clipped_sessions[guild.id].last_ui_message.delete()
 
     def _stop_capturing_voice(self, guild: discord.Guild):
-        DataStreamer.streams[guild.id].stop()
+        session = GatewayCog.clipped_sessions[guild.id]
+        session.stop_session()
 
     async def _leave_vc(self, respond_func: Callable, guild: discord.Guild) -> None:
         bot_voice = guild.voice_client

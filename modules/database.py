@@ -14,14 +14,14 @@ db = mg.MongoClient(MONGO_CONN_STRING)[MONGO_DB_NAME]
 
 
 def clear_all_clipped_sessions() -> None:
-    _delete_all_documents(collection_name=CLIPPED_SESSIONS_COLLECTION)
+    delete_all_documents(collection_name=CLIPPED_SESSIONS_COLLECTION)
 
 
 def member_exists(guild_id: int, user_id: int) -> bool:
-    results = _read_document(collection_name=USERS_COLLECTION,
-                             filter={
-                                 "_id": {"user_id": user_id, "guild_id": guild_id}},
-                             projection={"_id": 1})
+    results = read_document(collection_name=USERS_COLLECTION,
+                            filter={
+                                "_id": {"user_id": user_id, "guild_id": guild_id}},
+                            projection={"_id": 1})
     return len(results) >= 1
 
 
@@ -40,10 +40,10 @@ def get_opted_in_statuses(members: List[discord.Member]) -> Dict[discord.Member,
 
         # Fetch users' `opt_in` status from DB
         guild = member.guild
-        query_results = _read_document(collection_name=USERS_COLLECTION,
-                                       filter={
-                                           "_id": {"user_id": member.id, "guild_id": guild.id}},
-                                       projection={"_id": 0, "opted_in": 1})
+        query_results = read_document(collection_name=USERS_COLLECTION,
+                                      filter={
+                                          "_id": {"user_id": member.id, "guild_id": guild.id}},
+                                      projection={"_id": 0, "opted_in": 1})
 
         # If user doesn't exist in DB, create new user document
         opted_in = True  # default to opt-in status
@@ -65,42 +65,22 @@ def set_opted_in_status(guild: discord.Guild,
     unique_id = {"user_id": user.id, "guild_id": guild.id}
 
     # Check if user's opt-in preference for this server already exists
-    results = _read_document(collection_name=USERS_COLLECTION,
-                             filter={"_id": unique_id},
-                             projection={"_id": 1})
+    results = read_document(collection_name=USERS_COLLECTION,
+                            filter={"_id": unique_id},
+                            projection={"_id": 1})
 
     if len(results) < 1:  # create new document if not
-        _create_document(collection_name=USERS_COLLECTION,
-                         obj={
-                             "_id": unique_id,
-                             "user_name": user.name,
-                             "guild_name": guild.name,
-                             "opted_in": opted_in
-                         })
+        create_document(collection_name=USERS_COLLECTION,
+                        obj={
+                            "_id": unique_id,
+                            "user_name": user.name,
+                            "guild_name": guild.name,
+                            "opted_in": opted_in
+                        })
     else:  # otherwise, update existing document
-        _update_document(collection_name=USERS_COLLECTION,
-                         filter={"_id": unique_id},
-                         update_query={"$set": {"opted_in": opted_in}})
-
-
-def update_clipped_sessions(guild: discord.Guild,
-                            voice_channel: discord.VoiceChannel,
-                            bot_joined_vc: bool,
-                            bot_left_vc: bool) -> None:
-    if voice_channel is None:
-        raise Exception("Voice channel should not be None")
-
-    if bot_joined_vc:
-        # Register voice session in DB
-        _create_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
-                         obj={"_id": guild.id,
-                              "guild_name": guild.name,
-                              "channel_id": voice_channel.id,
-                              "channel_name": voice_channel.name})
-    elif bot_left_vc:
-        # Remove voice session from DB
-        _delete_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
-                         id=guild.id)
+        update_document(collection_name=USERS_COLLECTION,
+                        filter={"_id": unique_id},
+                        update_query={"$set": {"opted_in": opted_in}})
 
 
 #########################################################################
@@ -108,7 +88,7 @@ def update_clipped_sessions(guild: discord.Guild,
 #########################################################################
 
 
-def _create_document(collection_name: str, obj) -> str:
+def create_document(collection_name: str, obj) -> str:
     if collection_name not in db.list_collection_names():
         raise Exception(f"Collection name '{collection_name}' doesn't exist")
 
@@ -118,7 +98,7 @@ def _create_document(collection_name: str, obj) -> str:
     return inserted_id
 
 
-def _read_document(collection_name: str, filter, projection=None) -> List:
+def read_document(collection_name: str, filter, projection=None) -> List:
     if collection_name not in db.list_collection_names():
         raise Exception(f"Collection name '{collection_name}' doesn't exist")
 
@@ -128,7 +108,7 @@ def _read_document(collection_name: str, filter, projection=None) -> List:
     return results
 
 
-def _update_document(collection_name: str, filter, update_query) -> None:
+def update_document(collection_name: str, filter, update_query) -> None:
     if collection_name not in db.list_collection_names():
         raise Exception(f"Collection name '{collection_name}' doesn't exist")
 
@@ -140,7 +120,7 @@ def _update_document(collection_name: str, filter, update_query) -> None:
             f"No documents were updated (collection={collection_name}, filter={filter})")
 
 
-def _delete_document(collection_name: str, id: str) -> None:
+def delete_document(collection_name: str, id: str) -> None:
     if collection_name not in db.list_collection_names():
         raise Exception(f"Collection name '{collection_name}' doesn't exist")
 
@@ -152,7 +132,7 @@ def _delete_document(collection_name: str, id: str) -> None:
             f"No documents deleted (collection={collection_name}, id={id})")
 
 
-def _delete_all_documents(collection_name: str) -> None:
+def delete_all_documents(collection_name: str) -> None:
     if collection_name not in db.list_collection_names():
         raise Exception(f"Collection name '{collection_name}' doesn't exist")
 

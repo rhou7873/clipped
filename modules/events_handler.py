@@ -41,27 +41,17 @@ class EventsCog(Cog, name="Event Handler"):
         # and if so, retrieve the voice channel ID
         guild = member_updated.guild
 
-        # `bot_joined_vc`: bot joined a VC with users in it
-        # `bot_left_vc`: bot left a VC that it was in
-        bot_joined_vc = member_updated.id == BOT_USER_ID and after.channel is not None
-        bot_left_vc = member_updated.id == BOT_USER_ID and after.channel is None
-
-        if member_updated.id == BOT_USER_ID:  # when bot leaves/joins VC
-            db.update_clipped_sessions(guild=guild,
-                                       voice_channel=after.channel if bot_joined_vc else before.channel,
-                                       bot_joined_vc=bot_joined_vc,
-                                       bot_left_vc=bot_left_vc)
-
         if after.channel is not None:
             await self._notify_opt_in_options(voice_channel=after.channel)
 
+        bot_left_vc = member_updated.id == BOT_USER_ID and after.channel is None
         if bot_left_vc:
             # Repetitive call to disconnect() (also called in
             # cmd_gateway._leave_vc()), but ensures voice client
             # is truly disconnected when user "right-click > disconnect"s
             # instead of using /leavevc or clicking "Leave" button
-            await DataStreamer.streams[guild.id].voice.disconnect(force=True)
-            del DataStreamer.streams[guild.id]
+            await GatewayCog.clipped_sessions[guild.id].voice.disconnect(force=True)
+            del GatewayCog.clipped_sessions[guild.id]
 
     async def _notify_opt_in_options(self, voice_channel: discord.VoiceChannel) -> None:
         """

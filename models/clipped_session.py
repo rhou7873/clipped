@@ -1,33 +1,46 @@
+import asyncio
 from bw_secrets import CLIPPED_SESSIONS_COLLECTION
 import discord
+from modules.data_processor import DataProcessor
+from modules.data_streamer import DataStreamer
 import modules.database as db
-import pymongo
 
 
 class ClippedSession:
     def __init__(self,
-                 voice_channel: discord.VoiceChannel,
-                 started_by: discord.Member):
-        # Fields of database document
-        self.fields = {"_id": voice_channel.guild.id,
-                       "guild_name": voice_channel.guild.name,
-                       "channel_id": voice_channel.id,
-                       "channel_name": voice_channel.name,
-                       "started_by": {
-                           "user_id": started_by.id,
-                           "user_name": started_by.name
-                       }}
-        self.db_client = pymongo.MongoClient()
-        self.collection = CLIPPED_SESSIONS_COLLECTION
+                 voice: discord.VoiceClient,
+                 started_by: discord.Member,
+                 clip_size: int = 30,
+                 chunk_size: int = 1):
+        self.guild_id = voice.guild.id
+        self.guild_name = voice.guild.name
+        self.channel_id = voice.channel.id
+        self.channel_name = voice.channel.name
+        self.started_by = started_by
 
-    def update_clipped_sessions(self,
-                                bot_joined_vc: bool,
-                                bot_left_vc: bool) -> None:
-        if bot_joined_vc:
-            # Register voice session in DB
-            db.create_document(collection_name=self.collection,
-                               obj=self.fields)
-        elif bot_left_vc:
-            # Remove voice session from DB
-            db.delete_document(collection_name=self.collection,
-                               id=self.fields["_id"])
+        self.streamer = DataStreamer(voice,
+                                     clip_size=clip_size,
+                                     chunk_size=chunk_size)
+        asyncio.get_event_loop().create_task(self.streamer.start(),
+                                             name="ClippedSession > stream task")
+        self.processor = DataProcessor(voice, self.streamer)
+
+        self.last_ui_message: discord.InteractionMessage = None
+        self.voice = voice
+
+        # Fields of database document
+        self.db_fields = {"_id": self.guild_id,
+                          "guild_name": self.guild_name,
+                          "channel_id": self.channel_id,
+                          "channel_name": self.channel_name,
+                          "started_by": {
+                              "user_id": self.started_by.id,
+                              "user_name": self.started_by.name
+                          }}
+        db.create_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
+                           obj=self.db_fields)
+
+    def stop_session(self):
+        self.streamer.stop()
+        db.delete_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
+                           id=self.guild_id)

@@ -1,18 +1,13 @@
-from __future__ import annotations
-
 # Pycord modules
 import discord
 from discord.sinks import Sink, PCMSink
 
 # Other modules
 import asyncio
-from typing import Dict, List
+from typing import List
 
 
 class DataStreamer:
-    streams: Dict[int, DataStreamer] = {}
-    """Maps server IDs to their DataStreamer instance if there's an active Clipped session"""
-
     def __init__(self, voice: discord.VoiceClient, clip_size: int = 30, chunk_size: int = 1):
         self.audio_data_buffer: List[dict] = []
         """Buffer of audio data, straight from Pycord"""
@@ -26,8 +21,6 @@ class DataStreamer:
         """Size of audio chunks in buffer, in seconds"""
         self.stream_loop_task = None
         """Task that's running the loop to stream voice data from Discord"""
-
-        DataStreamer.streams[voice.guild.id] = self
 
     async def start(self) -> None:
         """Begin streaming audio data into buffers"""
