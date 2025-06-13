@@ -4,6 +4,7 @@ import modules.database as db
 
 # Pycord modules
 import discord
+import discord.opus as op
 import discord.sinks as sinks
 
 # Other modules
@@ -25,9 +26,9 @@ class DataProcessor:
         """Size of audio chunks in buffer, in seconds"""
 
         # WAV header parameters
-        self.channels = self.vc.decoder.CHANNELS
-        self.sampling_width = self.vc.decoder.SAMPLE_SIZE // self.channels
-        self.sampling_rate = self.vc.decoder.SAMPLING_RATE
+        self.channels = op.Decoder.CHANNELS
+        self.sampling_width = op.Decoder.SAMPLE_SIZE // self.channels
+        self.sampling_rate = op.Decoder.SAMPLING_RATE
 
     async def process_audio_data(self) -> io.BytesIO:
         """

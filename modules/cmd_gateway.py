@@ -3,7 +3,7 @@ from bw_secrets import DEV_GUILD_ID
 from models import ClippedSession
 import modules.database as db
 from modules.data_processor import DataProcessor
-from modules.data_streamer import DataStreamer 
+from modules.data_streamer import DataStreamer
 import ui
 
 # Pycord modules
@@ -23,7 +23,7 @@ class GatewayCog(Cog, name="Command Gateway"):
 
     CLIP_SIZE = 30
     CHUNK_SIZE = 1
-    
+
     clipped_sessions: Dict[int, ClippedSession] = {}
 
     def __init__(self, bot: discord.Bot):
@@ -160,9 +160,9 @@ class GatewayCog(Cog, name="Command Gateway"):
                                user: discord.Member) -> None:
         guild = voice.guild
         GatewayCog.clipped_sessions[guild.id] = ClippedSession(voice=voice,
-                                                         started_by=user,
-                                                         clip_size=GatewayCog.CLIP_SIZE,
-                                                         chunk_size=GatewayCog.CHUNK_SIZE)
+                                                               started_by=user,
+                                                               clip_size=GatewayCog.CLIP_SIZE,
+                                                               chunk_size=GatewayCog.CHUNK_SIZE)
 
     async def _display_gui(self,
                            guild: discord.Guild,
