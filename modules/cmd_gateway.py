@@ -2,20 +2,16 @@
 from bw_secrets import DEV_GUILD_ID
 from models import ClippedSession
 import modules.database as db
-from modules.data_processor import DataProcessor
-from modules.data_streamer import DataStreamer
 import ui
 
 # Pycord modules
+import discord
+from discord.ext.commands import Cog
+from discord.ext import commands
 
 # Other modules
 import asyncio
 from typing import Callable, Dict
-
-
-import discord
-from discord.ext.commands import Cog
-from discord.ext import commands
 
 
 class GatewayCog(Cog, name="Command Gateway"):
