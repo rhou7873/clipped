@@ -21,8 +21,8 @@ from discord.ext import commands
 class GatewayCog(Cog, name="Command Gateway"):
     """Encapsulates all of Clipped's supported commands"""
 
-    CLIP_SIZE = 30
-    CHUNK_SIZE = 1
+    CLIP_SIZE = 30  # length of clips (in seconds)
+    CHUNK_SIZE = 1  # length of audio chunks in buffer (in seconds)
 
     clipped_sessions: Dict[int, ClippedSession] = {}
 
@@ -62,7 +62,7 @@ class GatewayCog(Cog, name="Command Gateway"):
 
         # delete old control buttons
         await GatewayCog.clipped_sessions[guild.id].last_ui_message.delete()
-        await self._display_gui(respond_func, interaction)
+        await self._display_gui(guild, respond_func, interaction)
 
     ################################################################
     ######################## VOICE CLIPPING ########################
@@ -78,7 +78,6 @@ class GatewayCog(Cog, name="Command Gateway"):
         params = {
             "respond_func": ctx.respond,
             "guild": ctx.guild,
-            "voice_client": ctx.voice_client,
             "user": ctx.author
         }
         await self._clip_that_handler(**params)
@@ -86,20 +85,14 @@ class GatewayCog(Cog, name="Command Gateway"):
     async def _clip_that_handler(self,
                                  respond_func: Callable,
                                  guild: discord.Guild,
-                                 voice_client: discord.VoiceClient,
                                  user: discord.Member) -> None:
         if user.voice is None:
             await respond_func(":warning: You must be in a voice channel")
             return
 
         async def get_clip():
-            streamer = DataStreamer.streams[guild.id]
-            processor = DataProcessor(voice_client=voice_client,
-                                      audio_data_buffer=streamer.audio_data_buffer,
-                                      clip_size=GatewayCog.CLIP_SIZE,
-                                      chunk_size=GatewayCog.CHUNK_SIZE)
-
-            clip_bytes = await processor.process_audio_data()
+            session = GatewayCog.clipped_sessions[guild.id]
+            clip_bytes = await session.processor.process_audio_data()
 
             file = discord.File(clip_bytes, filename="clip.wav")
             await respond_func(file=file)

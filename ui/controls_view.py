@@ -11,7 +11,9 @@ class ControlsView(discord.ui.View):
     @discord.ui.button(label="Clip That",
                        style=discord.ButtonStyle.primary)
     async def btn_clip_that(self, button: discord.ui.Button, interaction: discord.Interaction):
-        await self.clip_that_func()
+        await self.clip_that_func(respond_func=interaction.respond,
+                                  guild=interaction.guild,
+                                  user=interaction.user)
 
     @discord.ui.button(label="Leave",
                        style=discord.ButtonStyle.danger)
