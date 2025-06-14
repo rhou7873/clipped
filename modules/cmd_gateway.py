@@ -148,10 +148,11 @@ class GatewayCog(Cog, name="Command Gateway"):
                                voice: discord.VoiceClient,
                                user: discord.Member) -> None:
         guild = voice.guild
-        GatewayCog.clipped_sessions[guild.id] = ClippedSession(voice=voice,
-                                                               started_by=user,
-                                                               clip_size=GatewayCog.CLIP_SIZE,
-                                                               chunk_size=GatewayCog.CHUNK_SIZE)
+        new_session = ClippedSession(voice=voice,
+                                     started_by=user,
+                                     clip_size=GatewayCog.CLIP_SIZE,
+                                     chunk_size=GatewayCog.CHUNK_SIZE)
+        GatewayCog.clipped_sessions[guild.id] = new_session
 
     async def _display_gui(self,
                            guild: discord.Guild,
@@ -160,8 +161,11 @@ class GatewayCog(Cog, name="Command Gateway"):
         clipped_buttons = ui.ControlsView(
             clip_that_func=self._clip_that_handler,
             leave_vc_func=self._leave_vc_handler)
+
         await respond_func(view=clipped_buttons)
-        GatewayCog.clipped_sessions[guild.id].last_ui_message = await interaction.original_response()
+
+        session = GatewayCog.clipped_sessions[guild.id]
+        session.last_ui_message = await interaction.original_response()
 
     ################################################################
     ######################### LEAVING VOICE ########################
