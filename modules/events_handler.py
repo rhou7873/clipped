@@ -1,6 +1,6 @@
 # Clipped modules
 from bw_secrets import BOT_USER_ID
-from modules.cmd_gateway import GatewayCog, DataStreamer
+from modules.cmd_gateway import GatewayCog
 import modules.database as db
 import ui
 
