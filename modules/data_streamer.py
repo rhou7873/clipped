@@ -8,7 +8,10 @@ from typing import List
 
 
 class DataStreamer:
-    def __init__(self, voice: discord.VoiceClient, clip_size: int = 30, chunk_size: int = 1):
+    def __init__(self,
+                 voice: discord.VoiceClient,
+                 clip_size: int = 30,
+                 chunk_size: int = 1):
         self.audio_data_buffer: List[dict] = []
         """Buffer of audio data, straight from Pycord"""
         self.voice = voice
@@ -54,7 +57,9 @@ class DataStreamer:
 
                 await sink_processed.wait()
 
-        self.stream_loop_task = asyncio.get_event_loop().create_task(stream_loop())
+        self.stream_loop_task = (asyncio
+                                 .get_event_loop()
+                                 .create_task(stream_loop()))
 
     def stop(self) -> None:
         """Stop streaming audio data into buffers"""

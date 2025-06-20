@@ -25,7 +25,10 @@ class EventsCog(Cog, name="Event Handler"):
                                     member: discord.Member,
                                     before: discord.VoiceState,
                                     after: discord.VoiceState) -> None:
-        """ Event triggered when voice channel status updates (e.g. user leaves/joins VC) """
+        """
+        Event triggered when voice channel status updates
+        (e.g. user leaves/joins VC)
+        """
         params = {
             "member_updated": member,
             "before": before,
@@ -42,7 +45,7 @@ class EventsCog(Cog, name="Event Handler"):
         guild = member_updated.guild
 
         if after.channel is not None:
-            await self._notify_opt_in_options(voice_channel=after.channel)
+            await self._notify_opt_in_options(voice=after.channel)
 
         bot_left_vc = member_updated.id == BOT_USER_ID and after.channel is None
         if bot_left_vc:
@@ -50,19 +53,25 @@ class EventsCog(Cog, name="Event Handler"):
             # cmd_gateway._leave_vc()), but ensures voice client
             # is truly disconnected when user "right-click > disconnect"s
             # instead of using /leavevc or clicking "Leave" button
-            await GatewayCog.clipped_sessions[guild.id].voice.disconnect(force=True)
+            await (GatewayCog.clipped_sessions[guild.id]
+                   .voice
+                   .disconnect(force=True))
             del GatewayCog.clipped_sessions[guild.id]
 
-    async def _notify_opt_in_options(self, voice_channel: discord.VoiceChannel) -> None:
+    async def _notify_opt_in_options(self,
+                                     voice: discord.VoiceChannel) -> None:
         """
-        If members in voice channel don't exist in database yet (i.e. first interaction
-        with the bot), then send them DM w/ opt-in preference options
+        If members in voice channel don't exist in database yet (i.e.
+        first interaction with the bot), then send them DM w/ opt-in
+        preference options
         """
-        for member in voice_channel.members:
+        for member in voice.members:
             if member.id == BOT_USER_ID:  # skip the bot itself
                 continue
 
-            if not db.member_exists(guild_id=member.guild.id, user_id=member.id):
+            member_exists = db.member_exists(guild_id=member.guild.id,
+                                             user_id=member.id)
+            if not member_exists:
                 db.set_opted_in_status(member.guild, member, opted_in=True)
                 dm = await member.create_dm()
                 view = ui.OptInView(member=member,
@@ -70,11 +79,13 @@ class EventsCog(Cog, name="Event Handler"):
                                     opt_out_handler=GatewayCog.opt_out_handler,
                                     show_opt_in=True,
                                     show_opt_out=True)
-                await dm.send("**OPT-IN PREFERENCE OPTIONS**\n"
-                              "Your voice is currently being captured by the Clipped bot in "
-                              f"the '{member.guild.name}' server for any audio clips generated. "
-                              "You may click either option below to opt-in or opt-out of "
-                              "voice capture moving forward", view=view)
+
+                msg = "**OPT-IN PREFERENCE OPTIONS**\n"
+                "Your voice is currently being captured by the Clipped bot in "
+                f"the '{member.guild.name}' server for any audio clips "
+                "generated. You may click either option below to opt-in or "
+                "opt-out of voice capture moving forward"
+                await dm.send(msg, view=view)
 
 
 def setup(bot):

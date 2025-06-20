@@ -15,8 +15,10 @@ import wave
 
 
 class DataProcessor:
-    def __init__(self, voice_client: discord.VoiceClient, streamer: DataStreamer):
-        self.vc = voice_client
+    def __init__(self,
+                 voice: discord.VoiceClient,
+                 streamer: DataStreamer):
+        self.vc = voice
         """Client of voice channel that this audio data is coming from"""
         self.streamer = streamer
         """DataStreamer object whose audio data we're processing"""
@@ -32,12 +34,14 @@ class DataProcessor:
 
     async def process_audio_data(self) -> io.BytesIO:
         """
-        Transforms raw AudioData chunks from Pycord into a "clip", outputted in WAV format.
+        Transforms raw AudioData chunks from Pycord into a "clip",
+        outputted in WAV format.
         """
 
         # Filter for "opted-in" users
         opted_in = [member.id
-                    for member in db.get_opted_in_members(self.vc.channel.members)]
+                    for member
+                    in db.get_opted_in_members(self.vc.channel.members)]
         filtered_data: List[Dict[int, sinks.AudioData]] = []
         for chunk in self.streamer.audio_data_buffer:
             filtered_chunk = {user_id: data
@@ -69,7 +73,8 @@ class DataProcessor:
             standardized_wav_chunk = {}
             for user_id, user_audio_data in chunk.items():
                 segment: pydub.AudioSegment = (pydub.AudioSegment
-                                               .from_file(user_audio_data, format="wav"))
+                                               .from_file(user_audio_data,
+                                                          format="wav"))
 
                 # compute left padding needed
                 eps = 50

@@ -1,11 +1,12 @@
-import discord
+from discord import Member
+from discord.ui import View
 from ui import OptInButton, OptOutButton
 from typing import Callable
 
 
-class OptInView(discord.ui.View):
+class OptInView(View):
     def __init__(self,
-                 member: discord.Member,
+                 member: Member,
                  opt_in_handler: Callable,
                  opt_out_handler: Callable,
                  show_opt_in: bool = False,

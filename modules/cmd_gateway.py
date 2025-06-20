@@ -134,9 +134,13 @@ class GatewayCog(Cog, name="Command Gateway"):
                        respond_func: Callable,
                        user: discord.Member) -> discord.VoiceClient | None:
         try:
-            voice_client: discord.VoiceClient = await user.voice.channel.connect()
+            voice_client: discord.VoiceClient = await (user
+                                                       .voice
+                                                       .channel
+                                                       .connect())
         except discord.ClientException as e:
-            await respond_func(":warning: I'm already connected to a voice channel")
+            msg = ":warning: I'm already connected to a voice channel"
+            await respond_func(msg)
             return None
         except Exception as e:
             print(e)
@@ -205,7 +209,9 @@ class GatewayCog(Cog, name="Command Gateway"):
         session = GatewayCog.clipped_sessions[guild.id]
         session.stop_session()
 
-    async def _leave_vc(self, respond_func: Callable, guild: discord.Guild) -> None:
+    async def _leave_vc(self,
+                        respond_func: Callable,
+                        guild: discord.Guild) -> None:
         bot_voice = guild.voice_client
 
         if bot_voice is None:
@@ -241,11 +247,12 @@ class GatewayCog(Cog, name="Command Gateway"):
                                user=member,
                                opted_in=True)
 
-        await dm.send("**OPT-IN CONFIRMATION**\n"
-                      f"You have ***opted in*** to audio capture in '{guild.name}', "
-                      "meaning your voice ***will*** be heard in clips generated "
-                      "from that server. This change will be reflected the next "
-                      "time a clip is generated.")
+        msg = "**OPT-IN CONFIRMATION**\n"
+        f"You have ***opted in*** to audio capture in '{guild.name}', "
+        "meaning your voice ***will*** be heard in clips generated "
+        "from that server. This change will be reflected the next "
+        "time a clip is generated."
+        await dm.send(msg)
 
     ################################################################
     ########################## OPT-OUT #############################
@@ -274,11 +281,12 @@ class GatewayCog(Cog, name="Command Gateway"):
                                user=member,
                                opted_in=False)
 
-        await dm.send("**OPT-OUT CONFIRMATION**\n"
-                      f"You have ***opted out*** of audio capture in '{guild.name}', "
-                      "meaning your voice ***will not*** be heard in clips generated "
-                      "from that server. This change will be reflected the next "
-                      "time a clip is generated.")
+        msg = "**OPT-OUT CONFIRMATION**\n"
+        f"You have ***opted out*** of audio capture in '{guild.name}', "
+        "meaning your voice ***will not*** be heard in clips generated "
+        "from that server. This change will be reflected the next "
+        "time a clip is generated."
+        await dm.send(msg)
 
     ################################################################
     ########################## CLIP SEARCH #########################
@@ -288,7 +296,9 @@ class GatewayCog(Cog, name="Command Gateway"):
         name="searchfor",
         description="Search for a clip with a prompt.",
         guild_ids=[DEV_GUILD_ID])
-    async def cmd_search_for(self, ctx: discord.ApplicationContext, *args) -> None:
+    async def cmd_search_for(self,
+                             ctx: discord.ApplicationContext,
+                             *args) -> None:
         """Definition for `/searchfor` slash command."""
         params = {
             "respond_func": ctx.respond,

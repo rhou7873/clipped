@@ -1,4 +1,4 @@
-import discord
+from discord import Guild, Member, User
 import pymongo as mg
 from typing import List, Dict
 from bw_secrets import (MONGO_CONN_STRING, MONGO_DB_NAME,
@@ -18,20 +18,23 @@ def clear_all_clipped_sessions() -> None:
 
 
 def member_exists(guild_id: int, user_id: int) -> bool:
+    filter = {"_id": {"user_id": user_id, "guild_id": guild_id}}
+    projection = {"_id": 1}
+
     results = read_document(collection_name=USERS_COLLECTION,
-                            filter={
-                                "_id": {"user_id": user_id, "guild_id": guild_id}},
-                            projection={"_id": 1})
+                            filter=filter,
+                            projection=projection)
+
     return len(results) >= 1
 
 
-def get_opted_in_members(members: List[discord.Member]) -> List[discord.Member]:
+def get_opted_in_members(members: List[Member]) -> List[Member]:
     statuses = get_opted_in_statuses(members)
     opted_in = [member for member, opted_in in statuses.items() if opted_in]
     return opted_in
 
 
-def get_opted_in_statuses(members: List[discord.Member]) -> Dict[discord.Member, bool]:
+def get_opted_in_statuses(members: List[Member]) -> Dict[Member, bool]:
     statuses = {}
 
     for member in members:
@@ -40,10 +43,11 @@ def get_opted_in_statuses(members: List[discord.Member]) -> Dict[discord.Member,
 
         # Fetch users' `opt_in` status from DB
         guild = member.guild
+        filter = {"_id": {"user_id": member.id, "guild_id": guild.id}}
+        projection = {"_id": 0, "opted_in": 1}
         query_results = read_document(collection_name=USERS_COLLECTION,
-                                      filter={
-                                          "_id": {"user_id": member.id, "guild_id": guild.id}},
-                                      projection={"_id": 0, "opted_in": 1})
+                                      filter=filter,
+                                      projection=projection)
 
         # If user doesn't exist in DB, create new user document
         opted_in = True  # default to opt-in status
@@ -59,8 +63,8 @@ def get_opted_in_statuses(members: List[discord.Member]) -> Dict[discord.Member,
     return statuses
 
 
-def set_opted_in_status(guild: discord.Guild,
-                        user: discord.User | discord.Member,
+def set_opted_in_status(guild: Guild,
+                        user: User | Member,
                         opted_in: bool) -> None:
     unique_id = {"user_id": user.id, "guild_id": guild.id}
 
@@ -117,7 +121,8 @@ def update_document(collection_name: str, filter, update_query) -> None:
 
     if result.matched_count < 1:
         raise Exception(
-            f"No documents were updated (collection={collection_name}, filter={filter})")
+            f"No documents were updated (collection={collection_name}, "
+            f"filter={filter})")
 
 
 def delete_document(collection_name: str, id: str) -> None:
@@ -141,4 +146,5 @@ def delete_all_documents(collection_name: str) -> None:
 
     if not result.acknowledged:
         raise Exception(
-            f"There was a problem deleting all documents (collection={collection_name})")
+            "There was a problem deleting all documents "
+            f"(collection={collection_name})")
