@@ -4,6 +4,8 @@ from discord.ext import commands
 from bw_secrets import BOT_TOKEN
 import modules.database as db
 
+import logging
+
 def main():
     """ Setup bot intents and cogs and bring General Walarus to life """
     intents = discord.Intents.default()
@@ -16,6 +18,8 @@ def main():
     bot.load_extension("modules.events_handler")
 
     db.clear_all_clipped_sessions()
+
+    logging.basicConfig(level=logging.ERROR)
 
     bot.run(BOT_TOKEN)
 
