@@ -21,8 +21,8 @@ class ClippedSession:
         self.streamer = DataStreamer(voice,
                                      clip_size=clip_size,
                                      chunk_size=chunk_size)
-        asyncio.get_event_loop().create_task(self.streamer.start(),
-                                             name="ClippedSession > stream task")
+        asyncio.create_task(self.streamer.start(),
+                            name="ClippedSession > stream task")
         self.processor = DataProcessor(voice, self.streamer)
 
         self.last_ui_message: discord.InteractionMessage = None
