@@ -49,12 +49,7 @@ class EventsCog(Cog, name="Event Handler"):
 
         bot_left_vc = member_updated.id == BOT_USER_ID and after.channel is None
         if bot_left_vc:
-            # Repetitive call to disconnect() (also called in
-            # cmd_gateway._leave_vc()), but ensures voice client
-            # is truly disconnected when user "right-click > disconnect"s
-            # instead of using /leavevc or clicking "Leave" button
             if GatewayCog.clipped_sessions.get(guild.id) is not None:
-                await guild.voice_client.disconnect(force=True)
                 # mapping may not exist if bot failed voice connection
                 # and is undergoing a reconnect
                 del GatewayCog.clipped_sessions[guild.id]

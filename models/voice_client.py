@@ -26,6 +26,10 @@ class ClippedVoiceClient(VoiceClient):
         self.endpoint = None
         self.server_id = channel.guild.id
         self.channel_id = channel.id
+        self.connect_ws: ClientConnection = None
+
+        self.heartbeat_task = None
+        self.event_listener = None
 
         headers = {
             "Authorization": f"Bot {BOT_TOKEN}",
@@ -37,24 +41,24 @@ class ClippedVoiceClient(VoiceClient):
         self.wss_url += "?v=10&encoding=json"
 
     async def voice_connect(self):
-        websocket = await websockets.connect(self.wss_url)
+        self.connect_ws = await websockets.connect(self.wss_url)
 
         # Receive Hello event, then initiate heartbeats in the background
-        hello = json.loads(await websocket.recv())
+        hello = json.loads(await self.connect_ws.recv())
 
         if hello["op"] != 10:
             raise Exception("Hello event failed")
 
         hb_interval = hello["d"]["heartbeat_interval"]
-        asyncio.create_task(
-            self._heartbeat_task(websocket=websocket,
+        self.heartbeat_task = asyncio.create_task(
+            self._heartbeat_task(websocket=self.connect_ws,
                                  hb_opcode=1,
                                  hb_interval=hb_interval),
             name="heartbeat"
         )
 
         # Identify
-        await websocket.send(json.dumps({
+        await self.connect_ws.send(json.dumps({
             "op": 2,
             "d": {
                 "token": BOT_TOKEN,
@@ -66,19 +70,19 @@ class ClippedVoiceClient(VoiceClient):
                 }
             }
         }))
-        ready = json.loads(await websocket.recv())
+        ready = json.loads(await self.connect_ws.recv())
 
         if ready["op"] != 0:
             raise Exception("Ready event failed")
 
         # Initialize event listener
-        asyncio.create_task(
-            self._event_loop(websocket),
+        self.event_listener = asyncio.create_task(
+            self._event_loop(self.connect_ws),
             name="event_loop"
         )
 
         # Connect to the voice channel
-        await websocket.send(json.dumps({
+        await self.connect_ws.send(json.dumps({
             "op": 4,
             "d": {
                 "guild_id": self.server_id,
@@ -87,6 +91,28 @@ class ClippedVoiceClient(VoiceClient):
                 "self_deaf": False
             }
         }))
+
+    async def disconnect(self, *, force: bool = False) -> None:
+        if not force and not self.is_connected():
+            return
+
+        self.stop()
+        self._connected.clear()
+
+        try:
+            if self.ws:
+                await self.ws.close()
+
+            # close tasks we spun up on connection
+            self.event_listener.cancel()
+            self.heartbeat_task.cancel()
+            await self.connect_ws.close()
+
+            await self.voice_disconnect()
+        finally:
+            self.cleanup()
+            if self.socket:
+                self.socket.close()
 
     async def _event_loop(self, websocket: ClientConnection):
         # Start listening for events
@@ -100,13 +126,14 @@ class ClippedVoiceClient(VoiceClient):
                 elif event["t"] == "VOICE_STATE_UPDATE":
                     print(f"Voice state updated")
                     self.vc_state_data = event["d"]
-                    self._voice_state_complete.set()
+                    await self.on_voice_state_update(self.vc_state_data)
                 if event["t"] == "VOICE_SERVER_UPDATE":
                     print(f"Voice server updated")
                     self.vc_server_data = event["d"]
                     self.endpoint = event["d"]["endpoint"]
                     self.token = event["d"]["token"]
-                    self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    self.socket = socket.socket(
+                        socket.AF_INET, socket.SOCK_DGRAM)
                     self._voice_server_complete.set()
                 else:
                     # print(json.dumps(event, indent=4))
