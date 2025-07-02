@@ -1,6 +1,6 @@
 from bw_secrets import BOT_TOKEN
 
-from discord import abc, Client, gateway, VoiceClient
+from discord import abc, Client, VoiceClient
 
 import asyncio
 import datetime
