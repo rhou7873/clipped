@@ -5,12 +5,14 @@ from discord import abc, Client, gateway, VoiceClient
 import asyncio
 import datetime
 import json
+import logging
 import random
 import requests
 import socket
 import websockets
 from websockets.asyncio.client import ClientConnection
 
+_log = logging.getLogger(__name__)
 
 class ClippedVoiceClient(VoiceClient):
     def __init__(self,
@@ -122,13 +124,13 @@ class ClippedVoiceClient(VoiceClient):
             if event["op"] == 0:
                 self.last_sequence = event["s"]
                 if event["t"] == "GUILD_CREATE":
-                    print(f"Connected to '{event["d"]["name"]}' server")
+                    _log.info(f"Connected to '{event["d"]["name"]}' server")
                 elif event["t"] == "VOICE_STATE_UPDATE":
-                    print(f"Voice state updated")
+                    _log.info(f"Voice state updated")
                     self.vc_state_data = event["d"]
                     await self.on_voice_state_update(self.vc_state_data)
                 if event["t"] == "VOICE_SERVER_UPDATE":
-                    print(f"Voice server updated")
+                    _log.info(f"Voice server updated")
                     self.vc_server_data = event["d"]
                     self.endpoint = event["d"]["endpoint"]
                     self.token = event["d"]["token"]
@@ -136,12 +138,11 @@ class ClippedVoiceClient(VoiceClient):
                         socket.AF_INET, socket.SOCK_DGRAM)
                     self._voice_server_complete.set()
                 else:
-                    # print(json.dumps(event, indent=4))
-                    pass
+                    _log.debug(json.dumps(event, indent=4))
             elif event["op"] == 1:
                 await self._heartbeat(websocket=websocket, hb_opcode=1)
             elif event["op"] == 11:
-                print("Heartbeat ACK received")
+                _log.info("Heartbeat ACK received")
 
     async def _heartbeat(self,
                          websocket: ClientConnection,
