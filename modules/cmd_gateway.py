@@ -1,6 +1,6 @@
 # Clipped modules
 from bw_secrets import DEV_GUILD_ID
-from models import ClippedSession
+from models import ClippedSession, ClippedVoiceClient
 import modules.database as db
 import ui
 
@@ -105,8 +105,9 @@ class GatewayCog(Cog, name="Command Gateway"):
         guild_ids=[DEV_GUILD_ID])
     async def cmd_join_vc(self, ctx: discord.ApplicationContext) -> None:
         """Definition for `/joinvc` slash command."""
+        await ctx.defer()
         params = {
-            "respond_func": ctx.respond,
+            "respond_func": ctx.send_followup,
             "interaction": ctx.interaction,
             "user": ctx.author,
             "guild": ctx.guild
@@ -120,7 +121,8 @@ class GatewayCog(Cog, name="Command Gateway"):
                                guild: discord.Guild) -> None:
         """Handler for `/joinvc` slash command"""
         if user.voice is None:
-            await respond_func(":warning: You must be in a voice channel")
+            msg = ":warning: You must be in a voice channel"
+            await respond_func(msg)
             return
 
         voice = await self._join_vc(respond_func, user)
@@ -128,7 +130,11 @@ class GatewayCog(Cog, name="Command Gateway"):
             return
 
         self._start_capturing_voice(voice, user)
-        await self._display_gui(guild, respond_func, interaction)
+
+        if GatewayCog.clipped_sessions.get(guild.id) is not None:
+            # indicates voice connection succeeded and a Clipped
+            # session has successfully been instantiated
+            await self._display_gui(guild, respond_func, interaction)
 
     async def _join_vc(self,
                        respond_func: Callable,
@@ -137,13 +143,15 @@ class GatewayCog(Cog, name="Command Gateway"):
             voice_client: discord.VoiceClient = await (user
                                                        .voice
                                                        .channel
-                                                       .connect())
+                                                       .connect(cls=ClippedVoiceClient))
         except discord.ClientException as e:
             msg = ":warning: I'm already connected to a voice channel"
             await respond_func(msg)
             return None
         except Exception as e:
             print(e)
+            msg = ":warning: There was an error trying to join voice"
+            await respond_func(msg)
             return None
 
         return voice_client

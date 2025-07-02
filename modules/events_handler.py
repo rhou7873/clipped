@@ -53,8 +53,8 @@ class EventsCog(Cog, name="Event Handler"):
             # cmd_gateway._leave_vc()), but ensures voice client
             # is truly disconnected when user "right-click > disconnect"s
             # instead of using /leavevc or clicking "Leave" button
-            await guild.voice_client.disconnect(force=True)
             if GatewayCog.clipped_sessions.get(guild.id) is not None:
+                await guild.voice_client.disconnect(force=True)
                 # mapping may not exist if bot failed voice connection
                 # and is undergoing a reconnect
                 del GatewayCog.clipped_sessions[guild.id]
