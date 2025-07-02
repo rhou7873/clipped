@@ -49,9 +49,11 @@ class EventsCog(Cog, name="Event Handler"):
 
         bot_left_vc = member_updated.id == BOT_USER_ID and after.channel is None
         if bot_left_vc:
+            self._stop_capturing_voice(guild)
             if GatewayCog.clipped_sessions.get(guild.id) is not None:
                 # mapping may not exist if bot failed voice connection
                 # and is undergoing a reconnect
+                await GatewayCog.clipped_sessions[guild.id].last_ui_message.delete()
                 del GatewayCog.clipped_sessions[guild.id]
 
     async def _notify_opt_in_options(self,
@@ -82,6 +84,10 @@ class EventsCog(Cog, name="Event Handler"):
                 "generated. You may click either option below to opt-in or "
                 "opt-out of voice capture moving forward"
                 await dm.send(msg, view=view)
+
+    def _stop_capturing_voice(self, guild: discord.Guild):
+        session = GatewayCog.clipped_sessions[guild.id]
+        session.stop_session()
 
 
 def setup(bot):

@@ -67,5 +67,8 @@ class DataStreamer:
             raise Exception("Can't stop DataStreamer if not already streaming")
 
         self.is_streaming = False
-        self.voice.stop_recording()
+
+        if self.voice.recording: 
+            self.voice.stop_recording()
+
         self.stream_loop_task.cancel()

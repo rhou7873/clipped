@@ -205,17 +205,11 @@ class GatewayCog(Cog, name="Command Gateway"):
             await respond_func(":warning: You must be in a voice channel")
             return
 
-        await self._remove_gui(guild)
-        self._stop_capturing_voice(guild)
+        # Note: this command handler simply disconnects the bot from voice.
+        # Other processes like GUI removal and Clipped session cleanup
+        # are handled in events_handler.py:on_voice_state_update().
         await self._leave_vc(respond_func, guild)
         await respond_func("No longer capturing audio for clips")
-
-    async def _remove_gui(self, guild: discord.Guild):
-        await GatewayCog.clipped_sessions[guild.id].last_ui_message.delete()
-
-    def _stop_capturing_voice(self, guild: discord.Guild):
-        session = GatewayCog.clipped_sessions[guild.id]
-        session.stop_session()
 
     async def _leave_vc(self,
                         respond_func: Callable,
