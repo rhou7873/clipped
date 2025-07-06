@@ -1,7 +1,8 @@
 # Clipped modules
 from bw_secrets import DEV_GUILD_ID
-from models import ClippedSession, ClippedVoiceClient
-import modules.database as db
+from models.session import ClippedSession 
+from models.member import ClippedMember
+from models.voice_client import ClippedVoiceClient
 import ui
 
 # Pycord modules
@@ -245,9 +246,9 @@ class GatewayCog(Cog, name="Command Gateway"):
                              guild: discord.Guild,
                              member: discord.Member):
         """Handler for `/optin` slash command."""
-        db.set_opted_in_status(guild=guild,
-                               user=member,
-                               opted_in=True)
+        ClippedMember.set_opted_in_status(guild=guild,
+                                          user=member,
+                                          opted_in=True)
 
         msg = "**OPT-IN CONFIRMATION**\n"
         f"You have ***opted in*** to audio capture in '{guild.name}', "
@@ -279,9 +280,9 @@ class GatewayCog(Cog, name="Command Gateway"):
                               guild: discord.Guild,
                               member: discord.Member) -> None:
         """Handler for `/optout` slash command."""
-        db.set_opted_in_status(guild=guild,
-                               user=member,
-                               opted_in=False)
+        ClippedMember.set_opted_in_status(guild=guild,
+                                          user=member,
+                                          opted_in=False)
 
         msg = "**OPT-OUT CONFIRMATION**\n"
         f"You have ***opted out*** of audio capture in '{guild.name}', "

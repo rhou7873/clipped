@@ -44,3 +44,7 @@ class ClippedSession:
         self.streamer.stop()
         db.delete_document(collection_name=CLIPPED_SESSIONS_COLLECTION,
                            id=self.guild_id)
+
+    @staticmethod
+    def db_clear_all_clipped_sessions() -> None:
+        db.delete_all_documents(collection_name=CLIPPED_SESSIONS_COLLECTION)

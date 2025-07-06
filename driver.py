@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 from bw_secrets import BOT_TOKEN
-import modules.database as db
+from models.session import ClippedSession
 
 import logging
 
@@ -17,7 +17,7 @@ def main():
     bot.load_extension("modules.cmd_gateway")
     bot.load_extension("modules.events_handler")
 
-    db.clear_all_clipped_sessions()
+    ClippedSession.db_clear_all_clipped_sessions()
 
     logging.basicConfig(level=logging.ERROR)
 

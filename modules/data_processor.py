@@ -1,6 +1,6 @@
 # Clipped modules
+from models.member import ClippedMember
 from modules.data_streamer import DataStreamer
-import modules.database as db
 
 # Pycord modules
 import discord
@@ -41,7 +41,7 @@ class DataProcessor:
         # Filter for "opted-in" users
         opted_in = [member.id
                     for member
-                    in db.get_opted_in_members(self.vc.channel.members)]
+                    in ClippedMember.get_opted_in_members(self.vc.channel.members)]
         filtered_data: List[Dict[int, sinks.AudioData]] = []
         for chunk in self.streamer.audio_data_buffer:
             filtered_chunk = {user_id: data

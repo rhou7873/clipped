@@ -1,7 +1,7 @@
 # Clipped modules
 from bw_secrets import BOT_USER_ID
+from models.member import ClippedMember
 from modules.cmd_gateway import GatewayCog
-import modules.database as db
 import ui
 
 # Pycord modules
@@ -15,6 +15,14 @@ class EventsCog(Cog, name="Event Handler"):
 
     def __init__(self, bot: discord.Bot):
         self.bot = bot
+
+    ####################################################################
+    ############################ ON READY ##############################
+    ####################################################################
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print("Clipped bot ready")
 
     ####################################################################
     ################### VOICE CHANNEL STATUS UPDATE ####################
@@ -67,10 +75,10 @@ class EventsCog(Cog, name="Event Handler"):
             if member.id == BOT_USER_ID:  # skip the bot itself
                 continue
 
-            member_exists = db.member_exists(guild_id=member.guild.id,
-                                             user_id=member.id)
+            member_exists = ClippedMember.member_exists(guild_id=member.guild.id,
+                                                        user_id=member.id)
             if not member_exists:
-                db.set_opted_in_status(member.guild, member, opted_in=True)
+                ClippedMember.set_opted_in_status(member.guild, member, opted_in=True)
                 dm = await member.create_dm()
                 view = ui.OptInView(member=member,
                                     opt_in_handler=GatewayCog.opt_in_handler,
