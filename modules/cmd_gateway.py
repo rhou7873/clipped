@@ -1,9 +1,9 @@
 # Clipped modules
 from bw_secrets import DEV_GUILD_ID
-from models.session import ClippedSession 
+from models.session import ClippedSession
 from models.member import ClippedMember
 from models.voice_client import ClippedVoiceClient
-import ui
+from ui.controls_view import ControlsView
 
 # Pycord modules
 import discord
@@ -171,7 +171,7 @@ class GatewayCog(Cog, name="Command Gateway"):
                            guild: discord.Guild,
                            respond_func: Callable,
                            interaction: discord.Interaction) -> None:
-        clipped_buttons = ui.ControlsView(
+        clipped_buttons = ControlsView(
             clip_that_func=self._clip_that_handler,
             leave_vc_func=self._leave_vc_handler)
 

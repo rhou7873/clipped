@@ -4,7 +4,7 @@ from discord.sinks import Sink, PCMSink
 
 # Other modules
 import asyncio
-from typing import List
+from typing import Deque
 
 
 class DataStreamer:
@@ -12,7 +12,7 @@ class DataStreamer:
                  voice: discord.VoiceClient,
                  clip_size: int = 30,
                  chunk_size: int = 1):
-        self.audio_data_buffer: List[dict] = []
+        self.audio_data_buffer: Deque[dict] = Deque(maxlen=int(clip_size / chunk_size) + 1)
         """Buffer of audio data, straight from Pycord"""
         self.voice = voice
         """Voice client we're streaming audio from"""
@@ -38,9 +38,8 @@ class DataStreamer:
 
             current_chunk = sink.audio_data
 
-            # Flush oldest chunk and add new chunk
-            if len(self.audio_data_buffer) * self.chunk_size > self.clip_size:
-                self.audio_data_buffer.pop(0)
+            # Add new chunk (oldest chunk will get flushed when
+            # buffer reaches its maxlen)
             self.audio_data_buffer.append(current_chunk)
 
             sink_processed.set()
@@ -68,7 +67,7 @@ class DataStreamer:
 
         self.is_streaming = False
 
-        if self.voice.recording: 
+        if self.voice.recording:
             self.voice.stop_recording()
 
         self.stream_loop_task.cancel()
