@@ -38,7 +38,7 @@ class DataProcessor:
         outputted in WAV format.
         """
 
-        # This outlines the outputs of each step within the
+        # This outlines the outputs of each step within this
         # audio data processing pipeline
         filtered_data: List[Dict[int, sinks.AudioData]]
         wav_chunks: List[Dict[int, io.BytesIO]]
@@ -46,13 +46,13 @@ class DataProcessor:
         overlayed_wav_chunks: List[pydub.AudioSegment]
         clip: pydub.AudioSegment
 
-        # This is the actual series of steps in the pipeline
+        # These actually carry out the series of steps in the pipeline
         filtered_data = self._filter_opted_in_members()
         wav_chunks = self._prepend_wav_headers(filtered_data)
         standardized_wav_chunks = self._standardize_chunk_sizes(wav_chunks)
         overlayed_wav_chunks = self._overlay_member_audios(
             standardized_wav_chunks)
-        clip = self._concatenate_chunks(overlayed_wav_chunks)
+        clip = self._concatenate_chunks(overlayed_wav_chunks, overlay=True)
 
         # Return final clip as BytesIO object
         clip_bytes_io = io.BytesIO()
@@ -68,10 +68,23 @@ class DataProcessor:
         can be offloaded elsewhere.
         """
 
+        # This outlines the outputs of each step within this
+        # audio data processing pipeline
         filtered_data: List[Dict[int, sinks.AudioData]]
         wav_chunks: List[Dict[int, io.BytesIO]]
         standardized_wav_chunks: List[Dict[int, pydub.AudioSegment]]
         clip_by_member: Dict[int, pydub.AudioSegment]
+
+        # These actually carry out the series of the steps in the pipeline.
+        # It's pretty much the same as process_audio_data(), but we skip
+        # the step of overlaying all members' audio.
+        filtered_data = self._filter_opted_in_members()
+        wav_chunks = self._prepend_wav_headers(filtered_data)
+        standardized_wav_chunks = self._standardize_chunk_sizes(wav_chunks)
+        clip_by_member = self._concatenate_chunks(
+            standardized_wav_chunks, overlay=False)
+
+        return clip_by_member
 
     def _filter_opted_in_members(self):
         """Filter for 'opted-in' users"""
@@ -198,7 +211,7 @@ class DataProcessor:
                 clip += chunk
         else:
             clip: Dict[int, pydub.AudioSegment] = {}
-            
+
             for chunk in wav_chunks:
                 if not isinstance(chunk, Dict):
                     raise Exception("Chunks within wav_chunks should be of type Dict if wav_chunks "
