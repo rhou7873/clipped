@@ -1,6 +1,7 @@
 from discord import Member
 from discord.ui import View
-from ui import OptInButton, OptOutButton
+from ui.opt_in_btn import OptInButton
+from ui.opt_out_btn import OptOutButton
 from typing import Callable
 
 

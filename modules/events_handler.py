@@ -2,7 +2,7 @@
 from bw_secrets import BOT_USER_ID
 from models.member import ClippedMember
 from modules.cmd_gateway import GatewayCog
-import ui
+from ui.opt_in_view import OptInView
 
 # Pycord modules
 import discord
@@ -76,11 +76,11 @@ class EventsCog(Cog, name="Event Handler"):
                 continue
 
             member_exists = ClippedMember.member_exists(guild_id=member.guild.id,
-                                                        user_id=member.id)
+                                                        member_id=member.id)
             if not member_exists:
                 ClippedMember.set_opted_in_status(member.guild, member, opted_in=True)
                 dm = await member.create_dm()
-                view = ui.OptInView(member=member,
+                view = OptInView(member=member,
                                     opt_in_handler=GatewayCog.opt_in_handler,
                                     opt_out_handler=GatewayCog.opt_out_handler,
                                     show_opt_in=True,
