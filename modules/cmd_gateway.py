@@ -3,6 +3,7 @@ from bw_secrets import DEV_GUILD_ID
 from models.session import ClippedSession
 from models.member import ClippedMember
 from models.voice_client import ClippedVoiceClient
+from modules.storage_handler import StorageHandler
 from ui.controls_view import ControlsView
 
 # Pycord modules
@@ -87,14 +88,20 @@ class GatewayCog(Cog, name="Command Gateway"):
             await respond_func(":warning: You must be in a voice channel")
             return
 
-        async def get_clip():
+        async def process_clip():
             session = GatewayCog.clipped_sessions[guild.id]
-            clip_bytes = await session.processor.process_audio_data()
+            clip = await session.processor.process_audio_data()
 
-            file = discord.File(clip_bytes, filename="clip.wav")
+            # immediately send clip w/ overlayed voice to text channel
+            file = discord.File(clip, filename="clip.wav")
             await respond_func(file=file)
 
-        asyncio.get_event_loop().create_task(get_clip())
+            # persist clip and its metadata in storage for later retrieval
+            clip_by_member = await session.processor.process_audio_data_by_member()
+            StorageHandler.store_clip_audio(clip)
+            StorageHandler.store_clip_metadata(clip_by_member)
+
+        asyncio.create_task(process_clip())
 
     ################################################################
     ######################### JOINING VOICE ########################
