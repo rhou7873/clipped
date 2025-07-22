@@ -90,14 +90,14 @@ class GatewayCog(Cog, name="Command Gateway"):
 
         async def process_clip():
             session = GatewayCog.clipped_sessions[guild.id]
-            clip = await session.processor.process_audio_data()
+            clip = session.processor.process_audio_data()
 
             # immediately send clip w/ overlayed voice to text channel
             file = discord.File(clip, filename="clip.wav")
             await respond_func(file=file)
 
             # persist clip and its metadata in storage for later retrieval
-            clip_by_member = await session.processor.process_audio_data_by_member()
+            clip_by_member = session.processor.process_audio_data_by_member()
             StorageHandler.store_clip_audio(clip)
             StorageHandler.store_clip_metadata(clip_by_member)
 

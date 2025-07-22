@@ -32,7 +32,7 @@ class DataProcessor:
         self.sampling_width = op.Decoder.SAMPLE_SIZE // self.channels
         self.sampling_rate = op.Decoder.SAMPLING_RATE
 
-    async def process_audio_data(self) -> io.BytesIO:
+    def process_audio_data(self) -> io.BytesIO:
         """
         Transforms raw AudioData chunks from Pycord into a "clip",
         outputted in WAV format.

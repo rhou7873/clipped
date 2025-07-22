@@ -1,4 +1,5 @@
 bitwarden-sdk==0.1.0
+google-cloud-storage
 pydub
 pymongo
 py-cord[voice]

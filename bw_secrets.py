@@ -40,6 +40,10 @@ DEV_GUILD_ID = client.secrets().get(
 DISCORD_API_URL = client.secrets().get(
     "2c787aca-338a-4394-b2ad-b2dd0000fbb8").data.value
 
+# GCP
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = client.secrets().get(
+    "5942ff02-4cdb-48f3-8f66-b32201870542").data.value
+
 # MongoDB
 CLIPPED_SESSIONS_COLLECTION = client.secrets().get(
     "8940a032-0ed4-41d3-ac61-b2dd0000ba15").data.value
