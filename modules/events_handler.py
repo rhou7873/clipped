@@ -78,19 +78,20 @@ class EventsCog(Cog, name="Event Handler"):
             member_exists = ClippedMember.member_exists(guild_id=member.guild.id,
                                                         member_id=member.id)
             if not member_exists:
-                ClippedMember.set_opted_in_status(member.guild, member, opted_in=True)
+                ClippedMember.set_opted_in_status(
+                    member.guild, member, opted_in=True)
                 dm = await member.create_dm()
                 view = OptInView(member=member,
-                                    opt_in_handler=GatewayCog.opt_in_handler,
-                                    opt_out_handler=GatewayCog.opt_out_handler,
-                                    show_opt_in=True,
-                                    show_opt_out=True)
+                                 opt_in_handler=GatewayCog.opt_in_handler,
+                                 opt_out_handler=GatewayCog.opt_out_handler,
+                                 show_opt_in=True,
+                                 show_opt_out=True)
 
-                msg = "**OPT-IN PREFERENCE OPTIONS**\n"
-                "Your voice is currently being captured by the Clipped bot in "
-                f"the '{member.guild.name}' server for any audio clips "
-                "generated. You may click either option below to opt-in or "
-                "opt-out of voice capture moving forward"
+                msg = ("**OPT-IN PREFERENCE OPTIONS**\n"
+                       "Your voice is currently being captured by the Clipped bot in "
+                       f"the '{member.guild.name}' server for any audio clips "
+                       "generated. You may click either option below to opt-in or "
+                       "opt-out of voice capture moving forward")
                 await dm.send(msg, view=view)
 
     def _stop_capturing_voice(self, guild: discord.Guild):

@@ -98,8 +98,9 @@ class GatewayCog(Cog, name="Command Gateway"):
 
             # persist clip and its metadata in storage for later retrieval
             clip_by_member = session.processor.process_audio_data_by_member()
-            object_name = StorageHandler.store_clip_audio(clip)
-            StorageHandler.store_clip_metadata(object_name, clip_by_member)
+            bucket_location = StorageHandler.store_clip_audio(guild, clip)
+            StorageHandler.store_clip_metadata(
+                guild, bucket_location, clip_by_member)
 
         asyncio.create_task(process_clip())
 
@@ -254,14 +255,14 @@ class GatewayCog(Cog, name="Command Gateway"):
                              member: discord.Member):
         """Handler for `/optin` slash command."""
         ClippedMember.set_opted_in_status(guild=guild,
-                                          user=member,
+                                          member=member,
                                           opted_in=True)
 
-        msg = "**OPT-IN CONFIRMATION**\n"
-        f"You have ***opted in*** to audio capture in '{guild.name}', "
-        "meaning your voice ***will*** be heard in clips generated "
-        "from that server. This change will be reflected the next "
-        "time a clip is generated."
+        msg = ("**OPT-IN CONFIRMATION**\n"
+               f"You have ***opted in*** to audio capture in '{guild.name}', "
+               "meaning your voice ***will*** be heard in clips generated "
+               "from that server. This change will be reflected the next "
+               "time a clip is generated.")
         await dm.send(msg)
 
     ################################################################
@@ -288,14 +289,14 @@ class GatewayCog(Cog, name="Command Gateway"):
                               member: discord.Member) -> None:
         """Handler for `/optout` slash command."""
         ClippedMember.set_opted_in_status(guild=guild,
-                                          user=member,
+                                          member=member,
                                           opted_in=False)
 
-        msg = "**OPT-OUT CONFIRMATION**\n"
-        f"You have ***opted out*** of audio capture in '{guild.name}', "
-        "meaning your voice ***will not*** be heard in clips generated "
-        "from that server. This change will be reflected the next "
-        "time a clip is generated."
+        msg = ("**OPT-OUT CONFIRMATION**\n"
+               f"You have ***opted out*** of audio capture in '{guild.name}', "
+               "meaning your voice ***will not*** be heard in clips generated "
+               "from that server. This change will be reflected the next "
+               "time a clip is generated.")
         await dm.send(msg)
 
     ################################################################
