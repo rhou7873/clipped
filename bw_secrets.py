@@ -55,3 +55,11 @@ MONGO_CONN_STRING = client.secrets().get(
     "8fc71769-0255-4491-a3f7-b2dd0000dabf").data.value
 MONGO_DB_NAME = client.secrets().get(
     "f3ba901e-6086-4ac3-bf91-b2dd0000ecc4").data.value
+
+# OPENAI
+os.environ["OPENAI_API_KEY"] = client.secrets().get(
+    "e48a5889-4558-4b64-95cc-b32300f301ed").data.value
+SUMMARY_SYSTEM_PROMPT = client.secrets().get(
+    "0daaebb1-2d9b-40dd-8c11-b32300ef78d6").data.value
+TRANSCRIPTION_MODEL = client.secrets().get(
+    "56b47589-c1e1-42e9-a3ec-b32300f905a0").data.value

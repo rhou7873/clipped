@@ -8,7 +8,6 @@ import discord
 from datetime import datetime
 import io
 from google.cloud import storage
-import pydub
 from typing import Dict
 import uuid
 
@@ -42,7 +41,7 @@ class StorageHandler:
     @staticmethod
     def store_clip_metadata(guild: discord.Guild,
                             bucket_location: str, 
-                            clip_by_member: Dict[int, pydub.AudioSegment]):
+                            clip_by_member: Dict[discord.Member, io.BytesIO]):
         clip = Clip(guild=guild,
                     timestamp=datetime.now(),
                     clip_by_member=clip_by_member,

@@ -40,9 +40,9 @@ class DataProcessor:
 
         # This outlines the outputs of each step within this
         # audio data processing pipeline
-        filtered_data: List[Dict[int, sinks.AudioData]]
-        wav_chunks: List[Dict[int, io.BytesIO]]
-        standardized_wav_chunks: List[Dict[int, pydub.AudioSegment]]
+        filtered_data: List[Dict[discord.Member, sinks.AudioData]]
+        wav_chunks: List[Dict[discord.Member, io.BytesIO]]
+        standardized_wav_chunks: List[Dict[discord.Member, pydub.AudioSegment]]
         overlayed_wav_chunks: List[pydub.AudioSegment]
         clip: pydub.AudioSegment
 
@@ -58,6 +58,7 @@ class DataProcessor:
         clip_bytes_io = io.BytesIO()
         clip.export(clip_bytes_io, format="wav")
         clip_bytes_io.seek(0)
+
         return clip_bytes_io
 
     def process_audio_data_by_member(self):
@@ -70,10 +71,10 @@ class DataProcessor:
 
         # This outlines the outputs of each step within this
         # audio data processing pipeline
-        filtered_data: List[Dict[int, sinks.AudioData]]
-        wav_chunks: List[Dict[int, io.BytesIO]]
-        standardized_wav_chunks: List[Dict[int, pydub.AudioSegment]]
-        clip_by_member: Dict[int, pydub.AudioSegment]
+        filtered_data: List[Dict[discord.Member, sinks.AudioData]]
+        wav_chunks: List[Dict[discord.Member, io.BytesIO]]
+        standardized_wav_chunks: List[Dict[discord.Member, pydub.AudioSegment]]
+        clip_by_member: Dict[discord.Member, pydub.AudioSegment]
 
         # These actually carry out the series of the steps in the pipeline.
         # It's pretty much the same as process_audio_data(), but we skip
@@ -84,18 +85,26 @@ class DataProcessor:
         clip_by_member = self._concatenate_chunks(
             standardized_wav_chunks, overlay=False)
 
-        return clip_by_member
+        # Convert users' AudioSegments to BytesIO for more flexibility downstream
+        clip_by_member_bytes: Dict[discord.Member, io.BytesIO] = {}
+        for user, audio in clip_by_member.items():
+            audio_bytes = io.BytesIO()
+            audio.export(audio_bytes, format="wav")
+            audio_bytes.seek(0)
+            clip_by_member_bytes[user] = audio_bytes
+
+        return clip_by_member_bytes
 
     def _filter_opted_in_members(self):
         """Filter for 'opted-in' users"""
-        opted_in = [member.id
+        opted_in = {member.id: member
                     for member
-                    in ClippedMember.get_opted_in_members(self.vc.channel.members)]
-        filtered_data: List[Dict[int, sinks.AudioData]] = []
+                    in ClippedMember.get_opted_in_members(self.vc.channel.members)}
+        filtered_data: List[Dict[discord.Member, sinks.AudioData]] = []
         for chunk in self.streamer.audio_data_buffer:
-            filtered_chunk = {user_id: data
-                              for user_id, data in chunk.items()
-                              if user_id in opted_in}
+            filtered_chunk = {opted_in[member_id]: data
+                              for member_id, data in chunk.items()
+                              if member_id in opted_in.keys()}
             filtered_data.append(filtered_chunk)
 
         return filtered_data
@@ -105,20 +114,20 @@ class DataProcessor:
         Convert all users' audio data within each chunk to 
         WAV format by prepending WAV headers.
         """
-        wav_chunks: List[Dict[int, io.BytesIO]] = []
+        wav_chunks: List[Dict[discord.Member, io.BytesIO]] = []
         for chunk in filtered_data:
-            wav_chunk: Dict[int, io.BytesIO] = {}
-            for user_id, user_audio_data in chunk.items():
-                user_wav = io.BytesIO()
-                with wave.open(user_wav, "wb") as w:
+            wav_chunk: Dict[discord.Member, io.BytesIO] = {}
+            for member, member_audio_data in chunk.items():
+                member_wav = io.BytesIO()
+                with wave.open(member_wav, "wb") as w:
                     # write WAV headers
                     w.setnchannels(self.channels)
                     w.setsampwidth(self.sampling_width)
                     w.setframerate(self.sampling_rate)
                     # write the actual audio data
-                    w.writeframes(user_audio_data.file.getvalue())
-                user_wav.seek(0)
-                wav_chunk[user_id] = user_wav
+                    w.writeframes(member_audio_data.file.getvalue())
+                member_wav.seek(0)
+                wav_chunk[member] = member_wav
             wav_chunks.append(wav_chunk)
 
         return wav_chunks
@@ -129,12 +138,13 @@ class DataProcessor:
         they are all synced and equal sized. This prepares the audio 
         chunks for each member to be accurately overlayed.
         """
-        standardized_wav_chunks: List[Dict[int, pydub.AudioSegment]] = []
+        standardized_wav_chunks: List[Dict[discord.Member, pydub.AudioSegment]]
+        standardized_wav_chunks = []
         for chunk in wav_chunks:
             standardized_wav_chunk = {}
-            for user_id, user_audio_data in chunk.items():
+            for member, member_audio_data in chunk.items():
                 segment: pydub.AudioSegment = (pydub.AudioSegment
-                                               .from_file(user_audio_data,
+                                               .from_file(member_audio_data,
                                                           format="wav"))
 
                 # compute left padding needed
@@ -159,7 +169,7 @@ class DataProcessor:
                 # prepend silence
                 padded_segment = silence + segment
 
-                standardized_wav_chunk[user_id] = padded_segment
+                standardized_wav_chunk[member] = padded_segment
 
             standardized_wav_chunks.append(standardized_wav_chunk)
 
@@ -210,7 +220,7 @@ class DataProcessor:
 
                 clip += chunk
         else:
-            clip: Dict[int, pydub.AudioSegment] = {}
+            clip: Dict[discord.Member, pydub.AudioSegment] = {}
 
             for chunk in wav_chunks:
                 if not isinstance(chunk, Dict):

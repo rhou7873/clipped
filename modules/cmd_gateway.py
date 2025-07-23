@@ -92,15 +92,17 @@ class GatewayCog(Cog, name="Command Gateway"):
             session = GatewayCog.clipped_sessions[guild.id]
             clip = session.processor.process_audio_data()
 
-            # immediately send clip w/ overlayed voice to text channel
+            # Immediately send clip w/ overlayed voice to text channel
             file = discord.File(clip, filename="clip.wav")
             await respond_func(file=file)
 
-            # persist clip and its metadata in storage for later retrieval
+            # Persist clip and its metadata in storage for later retrieval
             clip_by_member = session.processor.process_audio_data_by_member()
-            bucket_location = StorageHandler.store_clip_audio(guild, clip)
-            StorageHandler.store_clip_metadata(
-                guild, bucket_location, clip_by_member)
+            bucket_location = StorageHandler.store_clip_audio(guild=guild,
+                                                              clip=clip)
+            StorageHandler.store_clip_metadata(guild=guild,
+                                               bucket_location=bucket_location,
+                                               clip_by_member=clip_by_member)
 
         asyncio.create_task(process_clip())
 
