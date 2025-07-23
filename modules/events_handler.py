@@ -71,6 +71,10 @@ class EventsCog(Cog, name="Event Handler"):
         first interaction with the bot), then send them DM w/ opt-in
         preference options
         """
+        if BOT_USER_ID not in [member.id for member in voice.members]:
+            # Bot isn't in voice, so no need to send notification
+            return
+
         for member in voice.members:
             if member.id == BOT_USER_ID:  # skip the bot itself
                 continue
