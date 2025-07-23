@@ -45,8 +45,6 @@ class StorageHandler:
                             clip_by_member: Dict[int, pydub.AudioSegment]):
         clip = Clip(guild=guild,
                     timestamp=datetime.now(),
-                    transcription=None,
-                    embedding=None,
-                    summary=None,
+                    clip_by_member=clip_by_member,
                     bucket_location=bucket_location)
         clip.create_clip_metadata_in_db()
