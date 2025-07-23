@@ -1,5 +1,9 @@
 # Clipped modules
-from bw_secrets import CLIPS_METADATA_COLLECTION, TRANSCRIPTION_MODEL
+from bw_secrets import (CLIPS_METADATA_COLLECTION,
+                        EMBEDDING_MODEL,
+                        SUMMARY_MODEL,
+                        SUMMARY_SYSTEM_PROMPT,
+                        TRANSCRIPTION_MODEL)
 import modules.database as db
 
 # Pycord modules
@@ -53,14 +57,14 @@ class Clip:
             audio_bytes.name = f"{member.id}-audio.wav"
 
             # Transcribe with timestamps
-            transcript = self.ai_client.audio.transcriptions.create(
+            transcription_response = self.ai_client.audio.transcriptions.create(
                 model=TRANSCRIPTION_MODEL,
                 file=audio_bytes,
                 response_format="verbose_json"
             )
 
             # Transcription timestamped by segment,
-            transcript_json = transcript.model_dump()
+            transcript_json = transcription_response.model_dump()
             for seg in transcript_json["segments"]:
                 segments_with_speaker.append({
                     "member_name": member.name,
@@ -85,7 +89,16 @@ class Clip:
             raise Exception("Transcription hasn't been generated yet. "
                             "Call _generate_transcription() first")
 
+        input = SUMMARY_SYSTEM_PROMPT + self.transcription
+        summary_response = self.ai_client.responses.create(model=SUMMARY_MODEL,
+                                                           input=input)
+        return summary_response.output[0].content[0].text
+
     def _generate_summary_embedding(self):
         if self.transcription_summary is None:
             raise Exception("Transcription summary hasn't been generated yet. "
                             "Call _generate_transcription_summary() first")
+
+        embedding_response = self.ai_client.embeddings.create(model=EMBEDDING_MODEL,
+                                                              input=self.transcription_summary)
+        return embedding_response.data[0].embedding
