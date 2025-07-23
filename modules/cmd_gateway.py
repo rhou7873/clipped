@@ -98,8 +98,8 @@ class GatewayCog(Cog, name="Command Gateway"):
 
             # persist clip and its metadata in storage for later retrieval
             clip_by_member = session.processor.process_audio_data_by_member()
-            StorageHandler.store_clip_audio(clip)
-            StorageHandler.store_clip_metadata(clip_by_member)
+            object_name = StorageHandler.store_clip_audio(clip)
+            StorageHandler.store_clip_metadata(object_name, clip_by_member)
 
         asyncio.create_task(process_clip())
 

@@ -1,3 +1,11 @@
+# Clipped modules
+from models.clip import Clip
+
+# Pycord modules
+import discord
+
+# Other modules
+from datetime import datetime
 import io
 from google.cloud import storage
 import pydub
@@ -7,12 +15,15 @@ import uuid
 
 class StorageHandler:
     @staticmethod
-    def store_clip_audio(clip: io.BytesIO) -> str:
-        """Stores clip audio bytes into blob storage, returning the object name"""
+    def store_clip_audio(guild: discord.Guild, clip: io.BytesIO) -> str:
+        """
+        Stores clip audio bytes into blob storage, returning the 
+        storage bucket location.
+        """
 
         # Generate a unique filename
         clip_id = str(uuid.uuid4())
-        file_name = f"{clip_id}.wav"
+        file_name = f"{guild.name}-{guild.id}-{clip_id}.wav"
 
         # Rewind the BytesIO buffer
         clip.seek(0)
@@ -29,5 +40,13 @@ class StorageHandler:
         return f"gs://{BUCKET_NAME}/{file_name}"
 
     @staticmethod
-    def store_clip_metadata(clip_by_member: Dict[int, pydub.AudioSegment]):
-        pass
+    def store_clip_metadata(guild: discord.Guild,
+                            bucket_location: str, 
+                            clip_by_member: Dict[int, pydub.AudioSegment]):
+        clip = Clip(guild=guild,
+                    timestamp=datetime.now(),
+                    transcription=None,
+                    embedding=None,
+                    summary=None,
+                    bucket_location=bucket_location)
+        clip.create_clip_metadata_in_db()
