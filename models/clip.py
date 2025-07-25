@@ -24,6 +24,7 @@ class Clip:
 
         self.guild = guild
         self.timestamp = datetime.now()
+        self.timestamp_str = self.timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
         self.transcription = None
         self.transcription_summary = None

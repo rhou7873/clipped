@@ -1,9 +1,15 @@
+# Clipped modules
+from models.clip import Clip
+from ui.search_result_slct import SearchResultSelect
+
+# Pycord modules
 from discord.ui import View
-from typing import Callable
+
+# Other modules
+from typing import List
 
 
 class SearchResultView(View):
-    def __init__(self, clip_that_func: Callable, leave_vc_func: Callable):
+    def __init__(self, clips: List[Clip]):
         super().__init__()
-        self.clip_that_func = clip_that_func
-        self.leave_vc_func = leave_vc_func
+        self.add_item(SearchResultSelect(clips))

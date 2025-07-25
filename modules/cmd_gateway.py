@@ -5,6 +5,7 @@ from models.member import ClippedMember
 from models.session import ClippedSession
 from models.voice_client import ClippedVoiceClient
 from ui.controls_view import ControlsView
+from ui.search_result_view import SearchResultView
 
 # Pycord modules
 import discord
@@ -342,7 +343,31 @@ class GatewayCog(Cog, name="Command Gateway"):
         await self._test_handler(**params)
 
     async def _test_handler(self, respond_func: Callable):
-        pass
+        dummy_clips = [
+            {
+                "summary": "Alice discusses the roadmap for Q3, including team restructuring and key OKRs.",
+                "bucket_location": "https://storage.googleapis.com/your-bucket/clips/clip1.wav",
+                "timestamp_str": "2025-07-18 10:15 AM"
+            },
+            {
+                "summary": "Bob gives an update on the marketing campaign and shares early engagement metrics.",
+                "bucket_location": "https://storage.googleapis.com/your-bucket/clips/clip2.wav",
+                "timestamp_str": "2025-07-18 10:42 AM"
+            },
+            {
+                "summary": "Charlie raises concerns about technical debt in the backend system and suggests improvements.",
+                "bucket_location": "https://storage.googleapis.com/your-bucket/clips/clip3.wav",
+                "timestamp_str": "2025-07-18 11:03 AM"
+            },
+            {
+                "summary": "Diana presents mockups for the upcoming product redesign and collects team feedback.",
+                "bucket_location": "https://storage.googleapis.com/your-bucket/clips/clip4.wav",
+                "timestamp_str": "2025-07-18 11:27 AM"
+            }
+        ]
+
+        view = SearchResultView(dummy_clips)
+        await respond_func(f"**Top {len(dummy_clips)} Search Results**", view=view)
 
 
 def setup(bot):
