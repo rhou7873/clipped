@@ -1,10 +1,14 @@
-import discord
-from discord.ext import commands
-
+# Clipped modules
 from bw_secrets import BOT_TOKEN
 from models.session import ClippedSession
 
+# Pycord modules
+import discord
+from discord.ext import commands
+
+# Other modules
 import logging
+
 
 def main():
     """ Setup bot intents and cogs and bring General Walarus to life """
