@@ -99,12 +99,9 @@ class GatewayCog(Cog, name="Command Gateway"):
 
             # Persist clip and its metadata in storage for later retrieval
             clip_by_member = session.processor.process_audio_data_by_member()
-            clip = Clip(guild=guild,
-                        timestamp=datetime.now(),
-                        clip_bytes=clip_bytes,
-                        clip_by_member=clip_by_member)
-            object_uri = clip.store_clip_in_blob()
-            clip.store_clip_metadata_in_db(object_uri)
+            clip = Clip(guild)
+            object_uri = clip.store_clip_in_blob(clip_bytes)
+            clip.store_clip_metadata_in_db(clip_by_member, object_uri)
 
         asyncio.create_task(process_clip())
 
@@ -311,19 +308,41 @@ class GatewayCog(Cog, name="Command Gateway"):
         name="searchfor",
         description="Search for a clip with a prompt.",
         guild_ids=[DEV_GUILD_ID])
+    @discord.option("query", description="Describe the clip you're looking for")
     async def cmd_search_for(self,
                              ctx: discord.ApplicationContext,
-                             *args) -> None:
+                             query: str) -> None:
         """Definition for `/searchfor` slash command."""
         params = {
             "respond_func": ctx.respond,
-            "prompt": args
+            "query": query
         }
         await self._search_for_handler(**params)
 
-    async def _search_for_handler(self, respond_func: Callable, prompt: str):
+    async def _search_for_handler(self, respond_func: Callable, query: str):
         """Handler for `/searchfor` slash command."""
         await respond_func(":octagonal_sign: Command currently unsupported")
+
+    ################################################################
+    ######################### TEST COMMAND #########################
+    ################################################################
+
+    @commands.slash_command(
+        name="test",
+        description="Dummy command for testing.",
+        guild_ids=[DEV_GUILD_ID])
+    @discord.option("args", description="Whatever additional arguments you need.")
+    async def cmd_test(self,
+                       ctx: discord.ApplicationContext,
+                       args: str) -> None:
+        """Definition for `/test` slash command."""
+        params = {
+            "respond_func": ctx.respond
+        }
+        await self._test_handler(**params)
+
+    async def _test_handler(self, respond_func: Callable):
+        pass
 
 
 def setup(bot):

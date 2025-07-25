@@ -19,23 +19,17 @@ import uuid
 
 
 class Clip:
-    def __init__(self,
-                 guild: discord.Guild,
-                 timestamp: datetime,
-                 clip_bytes: io.BytesIO,
-                 clip_by_member: Dict[discord.Member, io.BytesIO]):
+    def __init__(self, guild: discord.Guild):
         self.ai_client = openai.OpenAI()
 
         self.guild = guild
-        self.timestamp = timestamp
-        self.clip_bytes = clip_bytes
-        self.clip_by_member = clip_by_member
+        self.timestamp = datetime.now()
 
         self.transcription = None
         self.transcription_summary = None
         self.summary_embedding = None
 
-    def store_clip_in_blob(self) -> str:
+    def store_clip_in_blob(self, clip_bytes: io.BytesIO) -> str:
         # Generate a unique filename
         clip_id = str(uuid.uuid4())
         file_name = f"{self.guild.name}-{self.guild.id}-{clip_id}.wav"
@@ -54,8 +48,10 @@ class Clip:
 
         return f"gs://{BUCKET_NAME}/{file_name}"
 
-    def store_clip_metadata_in_db(self, object_uri: str):
-        self.transcription = self._generate_transcription()
+    def store_clip_metadata_in_db(self,
+                                  clip_by_member: Dict[discord.Member, io.BytesIO],
+                                  object_uri: str):
+        self.transcription = self._generate_transcription(clip_by_member)
         self.transcription_summary = self._generate_transcription_summary()
         self.summary_embedding = self._generate_summary_embedding()
 
@@ -71,10 +67,10 @@ class Clip:
         db.create_document(collection_name=CLIPS_METADATA_COLLECTION,
                            obj=self.fields)
 
-    def _generate_transcription(self) -> str:
+    def _generate_transcription(self, clip_by_member: Dict[discord.Member, io.BytesIO]) -> str:
         segments_with_speaker = []
 
-        for member, audio_bytes in self.clip_by_member.items():
+        for member, audio_bytes in clip_by_member.items():
             audio_bytes.name = f"{member.id}-audio.wav"
 
             # Transcribe with timestamps
