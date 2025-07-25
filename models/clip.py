@@ -11,29 +11,50 @@ import discord
 
 # Other modules
 from datetime import datetime
+from google.cloud import storage
 import io
 import openai
 from typing import Dict
+import uuid
 
 
 class Clip:
     def __init__(self,
                  guild: discord.Guild,
                  timestamp: datetime,
-                 clip_by_member: Dict[discord.Member, io.BytesIO],
-                 bucket_location: str):
+                 clip_bytes: io.BytesIO,
+                 clip_by_member: Dict[discord.Member, io.BytesIO]):
         self.ai_client = openai.OpenAI()
 
         self.guild = guild
         self.timestamp = timestamp
+        self.clip_bytes = clip_bytes
         self.clip_by_member = clip_by_member
-        self.bucket_location = bucket_location
 
         self.transcription = None
         self.transcription_summary = None
         self.summary_embedding = None
 
-    def create_clip_metadata_in_db(self):
+    def store_clip_in_blob(self) -> str:
+        # Generate a unique filename
+        clip_id = str(uuid.uuid4())
+        file_name = f"{self.guild.name}-{self.guild.id}-{clip_id}.wav"
+
+        # Ensure BytesIO buffer pointer is at the beginning
+        self.clip_bytes.seek(0)
+
+        # Initialize GCS client and bucket
+        client = storage.Client()
+        BUCKET_NAME = "clipped"
+        bucket = client.bucket(BUCKET_NAME)
+        blob = bucket.blob(file_name)
+
+        # Upload the audio clip
+        blob.upload_from_file(self.clip_bytes, content_type="audio/wav")
+
+        return f"gs://{BUCKET_NAME}/{file_name}"
+
+    def store_clip_metadata_in_db(self, object_uri: str):
         self.transcription = self._generate_transcription()
         self.transcription_summary = self._generate_transcription_summary()
         self.summary_embedding = self._generate_summary_embedding()
@@ -44,7 +65,7 @@ class Clip:
             "transcription": self.transcription,
             "summary": self.transcription_summary,
             "summary_embedding": self.summary_embedding,
-            "bucket_location": self.bucket_location
+            "uri": object_uri
         }
 
         db.create_document(collection_name=CLIPS_METADATA_COLLECTION,

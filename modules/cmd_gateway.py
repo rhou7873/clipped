@@ -1,9 +1,9 @@
 # Clipped modules
 from bw_secrets import DEV_GUILD_ID
-from models.session import ClippedSession
+from models.clip import Clip
 from models.member import ClippedMember
+from models.session import ClippedSession
 from models.voice_client import ClippedVoiceClient
-from modules.storage_handler import StorageHandler
 from ui.controls_view import ControlsView
 
 # Pycord modules
@@ -13,6 +13,7 @@ from discord.ext import commands
 
 # Other modules
 import asyncio
+from datetime import datetime
 from typing import Callable, Dict
 
 
@@ -90,19 +91,20 @@ class GatewayCog(Cog, name="Command Gateway"):
 
         async def process_clip():
             session = GatewayCog.clipped_sessions[guild.id]
-            clip = session.processor.process_audio_data()
+            clip_bytes = session.processor.process_audio_data()
 
             # Immediately send clip w/ overlayed voice to text channel
-            file = discord.File(clip, filename="clip.wav")
+            file = discord.File(clip_bytes, filename="clip.wav")
             await respond_func(file=file)
 
             # Persist clip and its metadata in storage for later retrieval
             clip_by_member = session.processor.process_audio_data_by_member()
-            bucket_location = StorageHandler.store_clip_audio(guild=guild,
-                                                              clip=clip)
-            StorageHandler.store_clip_metadata(guild=guild,
-                                               bucket_location=bucket_location,
-                                               clip_by_member=clip_by_member)
+            clip = Clip(guild=guild,
+                        timestamp=datetime.now(),
+                        clip_bytes=clip_bytes,
+                        clip_by_member=clip_by_member)
+            object_uri = clip.store_clip_in_blob()
+            clip.store_clip_metadata_in_db(object_uri)
 
         asyncio.create_task(process_clip())
 
