@@ -36,7 +36,7 @@ class Clip:
         file_name = f"{self.guild.name}-{self.guild.id}-{clip_id}.wav"
 
         # Ensure BytesIO buffer pointer is at the beginning
-        self.clip_bytes.seek(0)
+        clip_bytes.seek(0)
 
         # Initialize GCS client and bucket
         client = storage.Client()
@@ -45,7 +45,7 @@ class Clip:
         blob = bucket.blob(file_name)
 
         # Upload the audio clip
-        blob.upload_from_file(self.clip_bytes, content_type="audio/wav")
+        blob.upload_from_file(clip_bytes, content_type="audio/wav")
 
         return f"gs://{BUCKET_NAME}/{file_name}"
 
