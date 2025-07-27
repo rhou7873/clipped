@@ -72,7 +72,11 @@ class GatewayCog(Cog, name="Command Gateway"):
         name="clipthat",
         description="Clip the last 30 seconds of voice activity.",
         guild_ids=[DEV_GUILD_ID])
-    async def cmd_clip_that(self, ctx: discord.ApplicationContext):
+    @discord.option("user",
+                    description="A specific user you want to clip.",
+                    type=discord.Member,
+                    required=False)
+    async def cmd_clip_that(self, ctx: discord.ApplicationContext, user: discord.Member):
         """Definition for `/clipthat` slash command."""
         await ctx.defer()  # make take a while to process, this extends timeout
         params = {
