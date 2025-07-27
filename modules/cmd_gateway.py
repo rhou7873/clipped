@@ -314,15 +314,31 @@ class GatewayCog(Cog, name="Command Gateway"):
                              ctx: discord.ApplicationContext,
                              query: str) -> None:
         """Definition for `/searchfor` slash command."""
+        await ctx.defer()
+
         params = {
             "respond_func": ctx.respond,
+            "guild": ctx.guild,
             "query": query
         }
         await self._search_for_handler(**params)
 
-    async def _search_for_handler(self, respond_func: Callable, query: str):
+    async def _search_for_handler(self,
+                                  respond_func: Callable,
+                                  guild: discord.Guild,
+                                  query: str):
         """Handler for `/searchfor` slash command."""
-        await respond_func(":octagonal_sign: Command currently unsupported")
+        query_results = Clip.query_for(guild, query, top_k=5)
+
+        if len(query_results) < 1:
+            await respond_func(f":warning: Search query didn't return anything! (query: `{query}`)")
+            return
+        elif len(query_results) > 25:
+            raise Exception("Search query yielded more than 25 results, which can't be "
+                            "rendered in the SearchResultView UI")
+
+        view = SearchResultView(query_results)
+        await respond_func(f"**Top {len(query_results)} Search Results**", view=view)
 
     ################################################################
     ######################### TEST COMMAND #########################
@@ -343,31 +359,10 @@ class GatewayCog(Cog, name="Command Gateway"):
         await self._test_handler(**params)
 
     async def _test_handler(self, respond_func: Callable):
-        dummy_clips = [
-            {
-                "summary": "Alice discusses the roadmap for Q3, including team restructuring and key OKRs.",
-                "bucket_location": "https://storage.googleapis.com/your-bucket/clips/clip1.wav",
-                "timestamp_str": "2025-07-18 10:15 AM"
-            },
-            {
-                "summary": "Bob gives an update on the marketing campaign and shares early engagement metrics.",
-                "bucket_location": "https://storage.googleapis.com/your-bucket/clips/clip2.wav",
-                "timestamp_str": "2025-07-18 10:42 AM"
-            },
-            {
-                "summary": "Charlie raises concerns about technical debt in the backend system and suggests improvements.",
-                "bucket_location": "https://storage.googleapis.com/your-bucket/clips/clip3.wav",
-                "timestamp_str": "2025-07-18 11:03 AM"
-            },
-            {
-                "summary": "Diana presents mockups for the upcoming product redesign and collects team feedback.",
-                "bucket_location": "https://storage.googleapis.com/your-bucket/clips/clip4.wav",
-                "timestamp_str": "2025-07-18 11:27 AM"
-            }
-        ]
-
-        view = SearchResultView(dummy_clips)
-        await respond_func(f"**Top {len(dummy_clips)} Search Results**", view=view)
+        # query_results = Clip.query_for()
+        # view = SearchResultView(query_results)
+        # await respond_func(f"**Top {len(query_results)} Search Results**", view=view)
+        pass
 
 
 def setup(bot):

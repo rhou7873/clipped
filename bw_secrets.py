@@ -43,6 +43,8 @@ DISCORD_API_URL = client.secrets().get(
 # GCP
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = client.secrets().get(
     "5942ff02-4cdb-48f3-8f66-b32201870542").data.value
+GCS_BUCKET_NAME = client.secrets().get(
+    "8f508ad6-b7ae-4de0-a605-b32700477c8d").data.value
 
 # MongoDB
 CLIPPED_SESSIONS_COLLECTION = client.secrets().get(

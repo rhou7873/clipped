@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 # Clipped modules
 from bw_secrets import (CLIPS_METADATA_COLLECTION,
                         EMBEDDING_MODEL,
+                        GCS_BUCKET_NAME,
                         SUMMARY_MODEL,
                         SUMMARY_SYSTEM_PROMPT,
                         TRANSCRIPTION_MODEL)
@@ -14,40 +17,43 @@ from datetime import datetime
 from google.cloud import storage
 import io
 import openai
-from typing import Dict
+from typing import Dict, List
 import uuid
 
 
 class Clip:
+    DATETIME_FORMAT = "%B %-d, %Y at %-I:%M %p %Z"
+
     def __init__(self, guild: discord.Guild):
         self.ai_client = openai.OpenAI()
 
         self.guild = guild
         self.timestamp = datetime.now()
-        self.timestamp_str = self.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        self.timestamp_str = self.timestamp.strftime(Clip.DATETIME_FORMAT)
 
         self.transcription = None
         self.transcription_summary = None
         self.summary_embedding = None
 
+        self.blob_filename = None
+
     def store_clip_in_blob(self, clip_bytes: io.BytesIO) -> str:
         # Generate a unique filename
         clip_id = str(uuid.uuid4())
-        file_name = f"{self.guild.name}-{self.guild.id}-{clip_id}.wav"
+        self.blob_filename = f"{self.guild.name}-{self.guild.id}-{clip_id}.wav"
 
         # Ensure BytesIO buffer pointer is at the beginning
         clip_bytes.seek(0)
 
         # Initialize GCS client and bucket
         client = storage.Client()
-        BUCKET_NAME = "clipped"
-        bucket = client.bucket(BUCKET_NAME)
-        blob = bucket.blob(file_name)
+        bucket = client.bucket(GCS_BUCKET_NAME)
+        blob = bucket.blob(self.blob_filename)
 
         # Upload the audio clip
         blob.upload_from_file(clip_bytes, content_type="audio/wav")
 
-        return f"gs://{BUCKET_NAME}/{file_name}"
+        return self.blob_filename
 
     def store_clip_metadata_in_db(self,
                                   clip_by_member: Dict[discord.Member, io.BytesIO],
@@ -120,3 +126,56 @@ class Clip:
         embedding_response = self.ai_client.embeddings.create(model=EMBEDDING_MODEL,
                                                               input=self.transcription_summary)
         return embedding_response.data[0].embedding
+
+    def set_timestamp(self, timestamp: datetime):
+        self.timestamp = timestamp
+        self.timestamp_str = self.timestamp.strftime(Clip.DATETIME_FORMAT)
+
+    @staticmethod
+    def query_for(guild: discord.Guild, query: str, top_k: int) -> List[Clip]:
+        """
+        Run a vector search query through the clip transcriptions for the
+        given guild, and return the top k Clip results.
+        """
+        if top_k > 10:
+            raise Exception("Can't query for more than top 10 results")
+
+        ai_client = openai.OpenAI()
+        embedding_response = ai_client.embeddings.create(model=EMBEDDING_MODEL,
+                                                         input=query)
+        embedding = embedding_response.data[0].embedding
+
+        result_docs = db.vector_search(embedding=embedding,
+                                       collection_name=CLIPS_METADATA_COLLECTION,
+                                       top_k=top_k,
+                                       filter={
+                                           "_id.guild_id": {
+                                               "$eq": guild.id
+                                           }
+                                       },
+                                       projection={
+                                           "_id": 1,
+                                           "transcription": 1,
+                                           "summary": 1,
+                                           "uri": 1
+                                       })
+
+        results: List[Clip] = []
+        for doc in result_docs:
+            if doc["score"] < 0.6:
+                continue  # don't want it if it's not even related to the query
+
+            clip = Clip(guild)
+
+            timestamp = doc["_id"]["timestamp"]
+            clip.set_timestamp(timestamp)
+
+            clip.transcription = doc["transcription"]
+            clip.transcription_summary = doc["summary"]
+            clip.transcription = doc["transcription"]
+
+            clip.blob_filename = doc["uri"]
+
+            results.append(clip)
+
+        return results

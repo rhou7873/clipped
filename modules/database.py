@@ -1,6 +1,10 @@
+# Clipped modules
+from bw_secrets import MONGO_CONN_STRING, MONGO_DB_NAME
+from models.clip import Clip
+
+# Other modules
 import pymongo as mg
 from typing import List
-from bw_secrets import MONGO_CONN_STRING, MONGO_DB_NAME
 
 db = mg.MongoClient(MONGO_CONN_STRING)[MONGO_DB_NAME]
 
@@ -65,3 +69,40 @@ def delete_all_documents(collection_name: str) -> None:
         raise Exception(
             "There was a problem deleting all documents "
             f"(collection={collection_name})")
+
+
+#########################################################################
+######################## MISCELLANEOUS FUNCTIONS ########################
+#########################################################################
+
+def vector_search(embedding: List[float],
+                  collection_name: str,
+                  top_k: int = 5,
+                  filter: any = None,
+                  projection: any = None) -> List:
+    collection = db[collection_name]
+
+    pipeline = [
+        {
+            "$vectorSearch": {
+                "exact": True,
+                "index": "vector_index",
+                "limit": top_k,
+                "path": "summary_embedding",
+                "queryVector": embedding
+            }
+        }
+    ]
+
+    if filter is not None:
+        pipeline[0]["$vectorSearch"]["filter"] = filter
+    if projection is not None:
+        proj_obj = {"$project": projection}
+        proj_obj["$project"]["score"] = {  # allows us to fetch the vector search score
+            "$meta": "vectorSearchScore"
+        }
+        pipeline.append(proj_obj)
+
+    results = list(collection.aggregate(pipeline))
+
+    return results
