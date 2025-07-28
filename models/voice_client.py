@@ -1,4 +1,4 @@
-from bw_secrets import BOT_TOKEN
+from bw_secrets import BOT_TOKEN, BOT_USER_ID
 
 from discord import abc, Client, VoiceClient
 
@@ -13,6 +13,7 @@ import websockets
 from websockets.asyncio.client import ClientConnection
 
 _log = logging.getLogger(__name__)
+
 
 class ClippedVoiceClient(VoiceClient):
     def __init__(self,
@@ -133,7 +134,12 @@ class ClippedVoiceClient(VoiceClient):
                 elif event["t"] == "VOICE_STATE_UPDATE":
                     _log.info(f"Voice state updated")
                     self.vc_state_data = event["d"]
-                    await self.on_voice_state_update(self.vc_state_data)
+
+                    # If we don't check whether the user that triggered the event
+                    # is the bot, then the bot may be disconnected if a user leaves voice
+                    user_id = int(self.vc_state_data["member"]["user"]["id"])
+                    if user_id == BOT_USER_ID:
+                        await self.on_voice_state_update(self.vc_state_data)
                 if event["t"] == "VOICE_SERVER_UPDATE":
                     _log.info(f"Voice server updated")
                     self.vc_server_data = event["d"]
