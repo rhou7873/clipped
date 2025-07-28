@@ -97,6 +97,8 @@ class ClippedVoiceClient(VoiceClient):
     async def disconnect(self, *, force: bool = False) -> None:
         if not force and not self.is_connected():
             return
+        if self.recording:
+            self.stop_recording()
 
         self.stop()
         self._connected.clear()
@@ -106,9 +108,12 @@ class ClippedVoiceClient(VoiceClient):
                 await self.ws.close()
 
             # close tasks we spun up on connection
-            self.event_listener.cancel()
-            self.heartbeat_task.cancel()
-            await self.connect_ws.close()
+            if self.event_listener:
+                self.event_listener.cancel()
+            if self.heartbeat_task:
+                self.heartbeat_task.cancel()
+            if self.connect_ws:
+                await self.connect_ws.close()
 
             await self.voice_disconnect()
         finally:
