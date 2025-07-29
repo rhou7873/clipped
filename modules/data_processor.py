@@ -139,7 +139,7 @@ class DataProcessor:
                                    .set_frame_rate(self.sampling_rate))
 
             # iteratively overlay all the users' voices
-            for _, user_audio_data in chunk.items():
+            for user_audio_data in chunk.values():
                 # Convert BytesIO to pydub.AudioSegment
                 user_audio_segment = pydub.AudioSegment.from_file(file=user_audio_data,
                                                                   format="wav")
